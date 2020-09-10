@@ -2,12 +2,12 @@
 <div class="container">
   <section class="section">
     <div class="columns is-mobile is-multiline">
-      <div v-for="(link, key) of links" :key="key" class="column is-2-desktop is-12-mobile small-gap">
+      <div v-for="(contentType, key) of contentTypes" :key="key" class="column is-2-desktop is-12-mobile small-gap">
         <nuxt-link
-            :to="{ path: link.link }"
+            :to="{ path: `${path}/${contentType.collection}` }"
             class="button is-active is-large is-fullwidth"
             exact-active-class="is-active">
-          {{link.label}}
+          {{contentType.label}}
         </nuxt-link>
       </div>
     </div>
@@ -22,17 +22,34 @@
 </style>
 
 <script>
+// mixins
+import fetchModel from '~/mixins/fetchModel'
+import sort from '~/mixins/sort'
 
 export default {
   name: 'EditPage',
   middleware: 'admin',
+  mixins: [
+    fetchModel,
+    sort
+  ],
   data () {
     return {
-     links: [{
-       label: 'Parks',
-       link: '/edit/parks'
-     }]
+     contentTypes: [],
     }
-  }
+  },
+  async fetch () {
+    const { path } = this.$route
+    this.path = path
+    const { data } = await this.getObject('/content-manager/content-types')
+    const contentTypes = data.filter(({ isDisplayed }) => isDisplayed)
+      .map(({ label, schema }) => ({
+        label,
+        collection: schema.collectionName
+      }))
+      .sort(this.by('label'))
+    this.contentTypes = contentTypes
+  },
+  fetchOnServer: false,
 }
 </script>

@@ -52,13 +52,7 @@ export default {
   methods: {
     async userLogin() {
       try {
-        // console.log('logging in', this.login.username)
         let response = await this.$auth.loginWith('local', { data: this.login })
-        // console.log('login response', response)
-        // // this.$router.push('/')
-        // const token = this.$auth.getToken('local')
-        // console.log('token', token)
-        // this.$strapi.setToken(token)
       } catch (err) {
         console.error('login err', err)
       }

@@ -13,8 +13,8 @@ export default {
   },
   data () {
     return {
-      name: 'Model',
-      pathPrefix: '/edit'
+      name: this.$route.params.model,
+      pathPrefix: this.$route.path.replace(`/${this.$route.params.model}`, '')
     }
   }
 }

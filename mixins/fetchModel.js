@@ -27,6 +27,10 @@ export default {
       const [value] = values
       return all ? values : value
     },
+    async getObject(path, params) {
+      const values = await this.$axios.$get(path, { params })
+      return values
+    },
     async getModelById(model, id) {
       const [value] = await this.$axios.$get(`/${model}/${id}`)
       return value
