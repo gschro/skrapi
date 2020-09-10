@@ -29,8 +29,8 @@ export default {
   data () {
     return {
      links: [{
-       label: 'Model',
-       link: '/edit/models'
+       label: 'Parks',
+       link: '/edit/parks'
      }]
     }
   }
