@@ -1,0 +1,40 @@
+{
+  "name": "skrapi",
+  "version": "1.0.0-alpha.1",
+  "private": true,
+  "license": "SEE LICENSE IN LICENSE",
+  "scripts": {
+    "dev": "nuxt",
+    "build": "nuxt build",
+    "start": "nuxt start",
+    "generate": "nuxt generate",
+    "test": "jest"
+  },
+  "dependencies": {
+    "@fortawesome/fontawesome-free": "^5.14.0",
+    "@fortawesome/free-brands-svg-icons": "^5.14.0",
+    "@fortawesome/free-regular-svg-icons": "^5.14.0",
+    "@fortawesome/free-solid-svg-icons": "^5.14.0",
+    "@nuxtjs/auth": "^4.9.1",
+    "@nuxtjs/axios": "^5.12.1",
+    "@nuxtjs/proxy": "^2.0.0",
+    "nuxt": "^2.13.0",
+    "nuxt-buefy": "^0.4.3",
+    "nuxt-fontawesome": "^0.4.0",
+    "pluralize": "^8.0.0"
+  },
+  "devDependencies": {
+    "@vue/test-utils": "^1.0.3",
+    "babel-core": "7.0.0-bridge.0",
+    "babel-jest": "^26.0.1",
+    "jest": "^26.0.1",
+    "vue-jest": "^3.0.4"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/gschro/skrapi.git"
+  },
+  "bugs": {
+    "url": "https://github.com/gschro/skrapi/issues"
+  }
+}
