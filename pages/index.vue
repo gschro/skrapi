@@ -1,6 +1,6 @@
 <template>
  <div class="fullwidth">
-  <hero-section></hero-section>
+  <hero-section :editPath="editPath"></hero-section>
  </div>
 </template>
 
@@ -12,10 +12,11 @@
 
 <script>
 import HeroSection from '~/components/sections/HeroSection'
+import editLabels from '~/mixins/editLabels'
 
 export default {
   name: 'HomePage',
-
+  mixins: [editLabels],
   components: {
     HeroSection
   }

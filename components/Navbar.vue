@@ -15,8 +15,8 @@
             <b-navbar-item tag="div">
                 <div class="buttons">
                   <template v-if="loggedIn">
-                    <nuxt-link :to="{ path: '/edit' }" exact-active-class="is-active" class="button is-primary">
-                      <strong>Edit</strong>
+                    <nuxt-link :to="{ path: editPath }" exact-active-class="is-active" class="button is-primary">
+                      <strong>{{editName}}</strong>
                     </nuxt-link>
                     <a  class="button is-secondary" @click="logout">
                       <strong>Sign out</strong>
@@ -47,6 +47,14 @@ export default {
       type: String,
       required: true
     },
+    editName: {
+      type: String,
+      required: true
+    },
+    editPath: {
+      type: String,
+      required: true
+    }
     // icon: {
     //   type: String,
     //   required: true

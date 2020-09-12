@@ -113,12 +113,12 @@ export default {
         const field = a.model
         const index = this.fields.findIndex(a => a.model === field)
         if (!this.modelObj[field]) {
-          this.fields[index].type = 'is-danger'
+          this.fields[index].componentState = 'is-danger'
           const error = `${a.label} is required`
           this.fields[index].message = error
           this.errors.push(error)
         } else {
-          this.fields[index].type = ''
+          this.fields[index].componentState = ''
           this.fields[index].message = ''
         }
       })

@@ -1,6 +1,6 @@
 <template>
   <div>
-    <navbar title="Skrapi"></navbar>
+    <navbar title="Skrapi" :editName="editName" :editPath="editPath"></navbar>
     <section class="main-content columns">
       <nuxt />
     </section>
@@ -9,12 +9,12 @@
 
 <script>
 import Navbar from '~/components/Navbar'
-import NavbarCenter from '~/components/NavbarCenter'
+import editLabels from '~/mixins/editLabels'
 
 export default {
+  mixins: [editLabels],
   components: {
-    Navbar,
-    NavbarCenter
+    Navbar
   },
   data () {
     return {

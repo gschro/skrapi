@@ -5,16 +5,16 @@ export default {
         const slug = slugOverride ?? this.getSlug(path)
         return this.getModel(model, { slug, ...params })
     },
-    async fetchAndPopModel(model) {
-      const path = this.getPath()
-      const slug = this.getSlug(path)
-      const modelValue = await this.getModel(model, { slug })
+    async fetchAndPopModel(model, id, fields) {
+      // const path = this.getPath()
+      // const slug = this.getSlug(path)
+      console.log('mod', model, 'id', id)
+      const modelValue = await this.getModelById(model, id)
       this.initialModel = modelValue
-
-      return this.populateModel(modelValue)
+      return this.populateModel(modelValue, fields)
     },
-    populateModel(model) {
-      return this.fields.reduce((acc, cv) => {
+    populateModel(model, fields = []) {
+      return fields.reduce((acc, cv) => {
         const value = model[cv.model]
         acc[cv.model] = value && typeof value === "object" ? value.id : value
         return acc
@@ -32,7 +32,8 @@ export default {
       return values
     },
     async getModelById(model, id) {
-      const [value] = await this.$axios.$get(`/${model}/${id}`)
+      const value = await this.$axios.$get(`/${model}/${id}`)
+      console.log('values', value)
       return value
     },
     async deleteModelById(model, id) {

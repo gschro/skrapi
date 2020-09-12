@@ -16,7 +16,7 @@
                      <!-- (Photo by Luis Ruiz from Pexels) -->
                     </p>
                     <p>
-                                <nuxt-link :to="{ path: '/edit' }"
+                                <nuxt-link :to="{ path: editPath }"
               exact-active-class="is-active" class="button cta rounded primary-btn raised">
                             Go to Content Types
                         </nuxt-link>
@@ -27,6 +27,17 @@
     </div>
   </section>
 </template>
+
+<script>
+export default {
+  props: {
+    editPath: {
+      type: String,
+      required: true
+    }
+  }
+}
+</script>
 
 <style scoped>
   .reorient {

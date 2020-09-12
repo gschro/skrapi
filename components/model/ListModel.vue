@@ -39,7 +39,7 @@
             </b-table-column>
 
             <b-table-column field="name" label="Name" searchable sortable v-slot="props">
-              <nuxt-link :to="{ path: `${finalPathPrefix}/${props.row.slug}` }" exact-active-class="is-active">
+              <nuxt-link :to="{ path: `${finalPathPrefix}/${props.row[routeParam]}` }" exact-active-class="is-active">
                 {{ props.row.name }}
               </nuxt-link>
             </b-table-column>

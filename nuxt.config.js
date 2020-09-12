@@ -56,6 +56,9 @@ export default {
       }
     }
   },
+  env: {
+    EDIT_PATH: process.env.EDIT_PATH,
+  },
   axios: {
     baseURL: process.env.BASE_URL
   },
@@ -69,5 +72,6 @@ export default {
     },
   publicRuntimeConfig: {
     baseURL: process.env.BASE_URL,
+    // editer: process.env.EDIT_PATH
   }
 }

@@ -4,7 +4,7 @@
     :fields="fields"
     :method="method"
     :remotes="remotes"
-    :pathPrefix="pathPrefix"
+    :pathPrefix="editPath"
   >
   </edit-model>
 </template>
@@ -14,6 +14,7 @@
 import EditModel from '~/components/model/EditModel'
 
 // mixins
+import editLabels from '~/mixins/editLabels'
 import fetchModel from '~/mixins/fetchModel'
 import sort from '~/mixins/sort'
 
@@ -21,6 +22,7 @@ export default {
   name: 'EditPark',
   middleware: 'admin',
   mixins: [
+    editLabels,
     fetchModel,
     sort
   ],
@@ -31,7 +33,6 @@ export default {
     return {
       name: 'Company',
       method: 'put',
-      pathPrefix: '/edit',
       remotes: {},
       fields: [
         {
@@ -86,11 +87,16 @@ export default {
     const { data } = await this.getObject('/content-manager/content-types')
     const [contentType] = data.filter(({ schema }) => schema.collectionName === params.model)
     this.contentType = contentType
-    const { data: meta } = await this.getObject(`/content-manager/content-types/${contentType.uid}`)
+    // const { data: meta } = await this.getObject(`/content-manager/content-types/${contentType.uid}`)
+    const { data: meta } = await this.getObject(`/content-manager/content-types/application::${params.model}.${params.model}`)
     this.contentTypeMeta = meta
     console.log('contentType', contentType)
     console.log('meta', meta)
-
+    console.log('model param', params.model)
+    console.log('id', params.id)
+    const model = await this.fetchAndPopModel(params.model, params.id)
+    console.log('model', model)
+    this.model = model
     // combine responses to create "fields"
     //  create map of field types to buefy fields (add missing from other packages or create)
   },
