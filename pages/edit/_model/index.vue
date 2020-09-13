@@ -16,6 +16,6 @@ export default {
       name: this.$route.params.model,
       pathPrefix: this.$route.path.replace(`/${this.$route.params.model}`, '')
     }
-  }
+  },
 }
 </script>

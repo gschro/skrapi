@@ -8,15 +8,14 @@ export default {
     async fetchAndPopModel(model, id, fields) {
       // const path = this.getPath()
       // const slug = this.getSlug(path)
-      console.log('mod', model, 'id', id)
       const modelValue = await this.getModelById(model, id)
       this.initialModel = modelValue
       return this.populateModel(modelValue, fields)
     },
     populateModel(model, fields = []) {
       return fields.reduce((acc, cv) => {
-        const value = model[cv.model]
-        acc[cv.model] = value && typeof value === "object" ? value.id : value
+        const value = model[cv.field]
+        acc[cv.field] = value && typeof value === "object" ? value.id : value
         return acc
       }, {
         id: model.id

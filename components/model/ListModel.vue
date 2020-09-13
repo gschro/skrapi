@@ -9,7 +9,7 @@
         </ul>
       </span>
       <b-button tag="nuxt-link" type="is-primary" class="fa-3x level-right mb-2" size="is-medium" :to="{ path: `${finalPathPrefix}/new` }" icon-left="plus">
-        New {{this.name}}
+        New {{singluarName}}
       </b-button>
     </div>
 
@@ -109,13 +109,17 @@ export default {
   },
   computed: {
     finalPathPrefix () {
-      return this.singularPath ? `${this.pathPrefix}/${this.name.toLowerCase()}` : `${this.pathPrefix}/${this.pluralLower}`
+      const name = this.name ? this.name.toLowerCase() : ''
+      return this.singularPath ? `${this.pathPrefix}/${name}` : `${this.pathPrefix}/${this.pluralLower}`
     },
     allLabel () {
       return this.singularPath ? `All ${this.name}` : this.backLabel
     },
     theData () {
       return this.data || this.fetchData
+    },
+    singluarName () {
+      return this.makeSingular(this.name)
     }
   },
   data () {

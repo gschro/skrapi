@@ -20,7 +20,7 @@
         :method="method"
         :fields="combined"
         :model="finalModel"
-        :remotes="remotes"
+        :remotes="finalRemotes"
         :redirect="redirect"
         :modelName="modelName"
       >
@@ -105,22 +105,24 @@ export default {
   data () {
     return {
       finalModel: {},
+      finalRemotes: {},
       initialModel: {},
-      contentTypeName: '',
+      name: '',
       theModel: {},
-      combined: []
+      combined: [],
+      relations: {},
+      options: {}
     }
   },
   computed: {
     redirect () {
-      const tab = this.backTab ? `?tab=${this.backTab}` : ''
       const redirect = `${this.pathPrefix}/${this.pluralLower}`
-      const path = this.$route.path.replace(`/${this.$route.params.slug}`, '').replace('/new', '')
+      const path = this.$route.path.replace(`/${this.$route.params.id}`, '').replace('/new', '')
       const finalPath = path !== redirect ? path.replace(`/${this.pluralLower}`, '').replace(`/${this.contentTypeLabel.toLowerCase()}`, '') : path
-      return finalPath + tab
+      return finalPath
     },
     contentTypeLabel () {
-      return this.makeSingular(this.contentTypeName)
+      return this.makeSingular(this.name)
     },
   },
   methods: {
@@ -148,14 +150,10 @@ export default {
     const { data } = await this.getObject('/content-manager/content-types')
     const [contentType] = data.filter(({ schema }) => schema.collectionName === params.model)
     this.contentType = contentType
-    this.contentTypeName = contentType.label
+    this.name = contentType.label
     const { data: meta } = await this.getObject(`/content-manager/content-types/${contentType.uid}`)
     // const { data: meta } = await this.getObject(`/content-manager/content-types/application::${params.model}.${params.model}`)
     this.contentTypeMeta = meta
-    console.log('contentType', contentType)
-    console.log('meta', meta)
-    console.log('model param', params.model)
-    console.log('id', params.id)
     const { metadatas, schema: { attributes }} = meta.contentType
     const componentMap = {
       integer: 'b-input',
@@ -165,21 +163,49 @@ export default {
       relation: 'b-select',
       json: 'b-input'
     }
+    this.options['type'] = ['Roller Coaster', 'Flat Ride', 'Dark Ride', 'Water Ride', 'Family Ride', 'Kids Ride', 'Thrill Ride'].sort()
     const combined = Object.entries(metadatas)
-      .map(([model, value]) => ({
-        model,
+      .map(([field, value]) => {
+        const remote = attributes[field].via ? { remote: attributes[field].model } : {}
+        const options = this.options[field] ? { options: this.options[field] } : {}
+      return {
+        field,
         ...value.edit,
-        ...attributes[model],
-        component: componentMap[attributes[model].type],
+        ...attributes[field],
+        component: this.options[field] ? 'b-select' : componentMap[attributes[field].type],
         message: '',
-        componentState: ''
-      }))
+        componentState: '',
+        ...remote,
+        ...options
+      }
+      })
       .filter(({visible}) => visible)
-    console.log('combined', combined)
+      // .reduce((field, acc)=>{
+      //   acc[field] =
+      //   return acc
+      // }, {})
+
+    const modelsWRels = combined.filter(a => a.remote)
+    const relations = {}
+    const memo = {}
+    for(const model of modelsWRels){
+      const relModel = this.makePlural(model.model)
+      if (this.remotes[relModel]){
+        continue
+      }
+      if(memo[relModel]){
+        relations[model.field] = memo[relModel]
+      }
+      else {
+        const resp = await this.getModel(relModel, null, true)
+        relations[model.field] = resp
+        memo[relModel] = resp
+      }
+    }
+    this.finalRemotes = { ...relations, ...this.remotes }
     this.combined = combined
 
     const model = await this.fetchAndPopModel(params.model, params.id, combined)
-    console.log('model', model)
     this.theModel = model
     this.finalModel = { ...this.theModel, ...this.model }
       this.$emit(`got:initial:model:${this.contentTypeLabel.toLowerCase()}`, this.initialModel)

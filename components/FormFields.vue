@@ -5,12 +5,12 @@
     novalidate="true"
     class="columns is-mobile is-multiline">
     <b-field v-for="(field, key) of fields" :key="key" :label="field.label" :type="field.type" :message="field.message" :custom-class="requiredField(field.required)" class='column mb-3 is-one-third-widescreen is-12-mobile small-gap no-marginb'>
-      <component :is="field.component" v-model="modelObj[field.model]" :aria-required="field.required" :required="field.required" :disabled="field.disabled">
+      <component :is="field.component" v-model="modelObj[field.field]" :aria-required="field.required" :required="field.required" :disabled="field.disabled">
         <template v-if="field.component === 'b-select' && field.options" >
           <option v-for="(option, key) of field.options" :key="key">{{option}}</option>
         </template>
         <template v-if="field.component === 'b-select' && field.remote">
-          <option v-for="(option, key) of remotes[field.remote]" :key="key" :value="option.id">{{option.name}}</option>
+          <option v-for="(option, key) of remotes[field.field]" :key="key" :value="option.id">{{option[field.mainField]}}</option>
         </template>
       </component>
     </b-field>
@@ -110,8 +110,8 @@ export default {
     requiredFields: function () {
       this.errors = []
       this.fields.filter(a => a.required).map(a => {
-        const field = a.model
-        const index = this.fields.findIndex(a => a.model === field)
+        const field = a.field
+        const index = this.fields.findIndex(a => a.field === field)
         if (!this.modelObj[field]) {
           this.fields[index].componentState = 'is-danger'
           const error = `${a.label} is required`

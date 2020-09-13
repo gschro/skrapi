@@ -3,7 +3,7 @@ import pluralize from 'pluralize'
 export default {
   computed: {
     plural () {
-      return pluralize(this.contentTypeLabel)
+      return pluralize(this.name)
     },
     pluralLower () {
       return this.plural.toLowerCase()
