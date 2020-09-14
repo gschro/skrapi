@@ -43,9 +43,10 @@ export default {
     this.path = path
     const { data } = await this.getObject('/content-manager/content-types')
     const contentTypes = data.filter(({ isDisplayed }) => isDisplayed)
-      .map(({ label, schema }) => ({
+      .map(({ label, schema, uid }) => ({
         label,
-        collection: schema.collectionName
+        collection: schema.collectionName,
+        uid
       }))
       .sort(this.by('label'))
     this.contentTypes = contentTypes

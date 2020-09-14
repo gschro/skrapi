@@ -141,6 +141,23 @@ export default {
     }
   },
   async fetch () {
+      // clean up api
+      // refactor
+      // unit tests
+      // add validations (out of box, private, min/max, allow custom)
+      // add other field types
+      // add component support
+      // add other relationship types
+      // caching of data (esp content type)
+      // allow using slug (or other field? instead of id)
+      // add remote filtering, maybe templating for dropdown
+      // list customizations/pagination, _limit=30, _limit=-1, _start=10&_limit=10
+      // allow related fields in table/lists
+      // add counts for model entries
+      // externalize config, maybe via plugin or nuxt or env vars
+      // add tabs?
+      // bulk updates? select/delete from lists
+      // allow choosing to stay on page after save
       // const route = this.modelName || this.pluralLower
       // const populatedModel = this.method === 'put' ? await this.fetchAndPopModel(route) : {}
       // this.finalModel = { ...populatedModel, ...this.model }
@@ -149,7 +166,7 @@ export default {
     this.path = path
     const { data } = await this.getObject('/content-manager/content-types')
     const [contentType] = data.filter(({ schema }) => schema.collectionName === params.model)
-    this.contentType = contentType
+    // this.contentType = contentType
     this.name = contentType.label
     const { data: meta } = await this.getObject(`/content-manager/content-types/${contentType.uid}`)
     // const { data: meta } = await this.getObject(`/content-manager/content-types/application::${params.model}.${params.model}`)
