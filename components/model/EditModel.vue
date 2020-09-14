@@ -144,7 +144,7 @@ export default {
       // clean up api
       // refactor
       // unit tests
-      // add validations (out of box, private, min/max, allow custom)
+      // add validations (required, min/max, unique?, private (don't show), configurable (disable))
       // add other field types
       // add component support
       // add other relationship types
@@ -173,30 +173,52 @@ export default {
     this.contentTypeMeta = meta
     const { metadatas, schema: { attributes }} = meta.contentType
     const componentMap = {
-      integer: 'b-input',
-      string: 'b-input',
-      boolean: 'b-switch',
-      decimal: 'b-input',
       relation: 'b-select',
-      json: 'b-input'
+      string: 'b-input',
+          text: 'b-input',
+          richtext: 'b-input',
+        email: 'b-input',
+        password: 'b-input',
+        integer: 'b-numberinput',
+        biginteger: 'b-numberinput',
+        float: 'b-numberinput',
+        decimal: 'b-numberinput',
+        date: 'b-datepicker',
+        time: 'b-clockpicker',
+        datetime: 'b-datetimepicker',
+      boolean: 'b-switch',
+          enumeration: 'b-select',
+          json: 'b-input',
+        uid: 'b-input' // add front-end preview or hide?
     }
+    // when "plugin": "upload" then b-upload
     this.options['type'] = ['Roller Coaster', 'Flat Ride', 'Dark Ride', 'Water Ride', 'Family Ride', 'Kids Ride', 'Thrill Ride'].sort()
+    const subtypeLookup = {
+      password: 'password',
+      text: 'textarea',
+      richtext: 'textarea'
+    }
     const combined = Object.entries(metadatas)
       .map(([field, value]) => {
         const remote = attributes[field].via ? { remote: attributes[field].model } : {}
         const options = this.options[field] ? { options: this.options[field] } : {}
+        const componentType = subtypeLookup[attributes[field].type]|| 'text'
+        const disabled = !!attributes[field].configurable
       return {
         field,
         ...value.edit,
         ...attributes[field],
         component: this.options[field] ? 'b-select' : componentMap[attributes[field].type],
+        componentType,
         message: '',
         componentState: '',
+        disabled,
         ...remote,
         ...options
       }
       })
       .filter(({visible}) => visible)
+      .filter((a) => !a.private)
       // .reduce((field, acc)=>{
       //   acc[field] =
       //   return acc
