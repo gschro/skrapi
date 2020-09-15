@@ -182,12 +182,15 @@ export default {
       email: { component: 'b-input', componentType: 'email' },
       password: { component: 'b-input', componentType: 'password' },
       integer: { component: 'b-numberinput', step: 1 },
-      biginteger: { component: 'b-numberinput', step: 1 },
+      biginteger: { component: 'b-input', step: 1 },
       float: { component: 'b-numberinput' },
       decimal: { component: 'b-numberinput' },
-      date: { component: 'b-datepicker' },
+      date: { component: 'b-datepicker'},
       time: { component: 'b-clockpicker' },
       datetime: { component: 'b-datetimepicker' },
+      // date: { component: 'b-input' },
+      // time: { component: 'b-input', hourFormat: '24' },
+     // datetime: { component: 'b-input' },
       boolean: { component: 'b-switch' },
           enumeration: { component: 'b-select' },
           json: { component: 'b-input' },
@@ -224,6 +227,10 @@ export default {
       })
       .filter(({visible}) => visible)
       .filter((a) => !a.private)
+
+      const dateFields = combined.filter(a => ['date','datetime','time'].includes(a.type))
+
+      console.log('combined', combined)
       // .reduce((field, acc)=>{
       //   acc[field] =
       //   return acc
@@ -251,7 +258,30 @@ export default {
 
     const model = await this.fetchAndPopModel(params.model, params.id, combined)
     this.theModel = model
+
+    dateFields.forEach(a => {
+
+      if (this.theModel && this.theModel[a.field]){
+        console.log('date field',a.type)
+        // if(a.type === 'date') {
+          console.log('date tm field', this.theModel[a.field])
+          console.log('date theModel', new Date(Date.parse(this.theModel[a.field])))
+          this.theModel[a.field] = new Date(Date.parse(this.theModel[a.field]))
+        // }
+      }
+      if (this.model && this.model[a.field]){
+        console.log('date field2',a)
+        if(a.type === 'date') {
+          console.log('date m field', this.theModel[a.field])
+          console.log('date model', new Date(Date.parse(this.model[a.field])))
+          this.model[a.field] = new Date(Date.parse(this.model[a.field]))
+        }
+      }
+    })
     this.finalModel = { ...this.theModel, ...this.model }
+
+
+    // fix date fields: new Date(Date.parse(a))
       this.$emit(`got:initial:model:${this.contentTypeLabel.toLowerCase()}`, this.initialModel)
       this.$emit(`got:model:${this.contentTypeLabel.toLowerCase()}`, this.populatedModel)
       this.$emit(`got:merged:model:${this.contentTypeLabel.toLowerCase()}`, this.finalModel)

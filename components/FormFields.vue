@@ -5,7 +5,7 @@
     novalidate="true"
     class="columns is-mobile is-multiline">
     <b-field v-for="(field, key) of fields" :key="key" :label="field.label" :type="field.type" :message="field.message" :custom-class="requiredField(field.required)" class='column mb-3 is-one-third-widescreen is-12-mobile small-gap no-marginb'>
-      <component :is="field.component" v-model="modelObj[field.field]" :aria-required="field.required" :required="field.required" :disabled="field.disabled">
+      <component :is="field.component" v-model="modelObj[field.field]" :aria-required="field.required" :required="field.required" :disabled="field.disabled" :hour-format="field.hourFormat" :date-formatter="field.dateFormatter">
         <template v-if="field.component === 'b-select' && field.options" >
           <option v-for="(option, key) of field.options" :key="key">{{option}}</option>
         </template>

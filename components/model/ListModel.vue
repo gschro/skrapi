@@ -181,6 +181,7 @@ export default {
     },
     async loadAsyncData() {
         this.loading = true
+        console.log('tests', this.pluralLower)
         this.fetchData = await this.$axios.$get(`/${this.pluralLower}`, { params: { _sort: `${this.sortField}:${this.sortOrder.toUpperCase()}`, _start: this.startPage, _limit: this.limit }})
         this.loading = false
     },
@@ -226,7 +227,8 @@ export default {
     this.columns = count > 100 ? filteredMetas.map(({searchable, ...a}) => (a)) : filteredMetas
     console.log('filteredMetas', filteredMetas)
     if (!this.data){
-      this.fetchData = await this.$axios.$get(`/${this.pluralLower}`, { params: { _sort: 'name:ASC' }})
+      await this.loadAsyncData()// await this.$axios.$get(`/${this.pluralLower}`, { params: { _sort: 'name:ASC' }})
+      console.log('fd', this.fetchData)
       console.log('fetchData', this.fetchData.length)
       console.log('params', this.$route.params)
     }
