@@ -173,43 +173,48 @@ export default {
     this.contentTypeMeta = meta
     const { metadatas, schema: { attributes }} = meta.contentType
     const componentMap = {
-      relation: 'b-select',
-      string: 'b-input',
-          text: 'b-input',
-          richtext: 'b-input',
-        email: 'b-input',
-        password: 'b-input',
-        integer: 'b-numberinput',
-        biginteger: 'b-numberinput',
-        float: 'b-numberinput',
-        decimal: 'b-numberinput',
-        date: 'b-datepicker',
-        time: 'b-clockpicker',
-        datetime: 'b-datetimepicker',
-      boolean: 'b-switch',
-          enumeration: 'b-select',
-          json: 'b-input',
-        uid: 'b-input' // add front-end preview or hide?
+      relation: {
+        component: 'b-select'
+      },
+      string: { component: 'b-input' },
+      text: { component: 'b-input', componentType: 'textarea' },
+          richtext: { component: 'b-input' },
+      email: { component: 'b-input', componentType: 'email' },
+      password: { component: 'b-input', componentType: 'password' },
+      integer: { component: 'b-numberinput', step: 1 },
+      biginteger: { component: 'b-numberinput', step: 1 },
+      float: { component: 'b-numberinput' },
+      decimal: { component: 'b-numberinput' },
+      date: { component: 'b-datepicker' },
+      time: { component: 'b-clockpicker' },
+      datetime: { component: 'b-datetimepicker' },
+      boolean: { component: 'b-switch' },
+          enumeration: { component: 'b-select' },
+          json: { component: 'b-input' },
+      uid: { component: 'b-input' } // add front-end preview or hide?
     }
     // when "plugin": "upload" then b-upload
     this.options['type'] = ['Roller Coaster', 'Flat Ride', 'Dark Ride', 'Water Ride', 'Family Ride', 'Kids Ride', 'Thrill Ride'].sort()
-    const subtypeLookup = {
-      password: 'password',
-      text: 'textarea',
-      richtext: 'textarea'
-    }
+    // const subtypeLookup = {
+    //   password: 'password',
+    //   text: 'textarea',
+    //   richtext: 'textarea'
+    // }
     const combined = Object.entries(metadatas)
       .map(([field, value]) => {
         const remote = attributes[field].via ? { remote: attributes[field].model } : {}
-        const options = this.options[field] ? { options: this.options[field] } : {}
-        const componentType = subtypeLookup[attributes[field].type]|| 'text'
+        const hasOptions = this.options[field]
+        if (field === 'type') console.log('hasOpts', hasOptions)
+        const options = hasOptions ? { options: hasOptions } : {}
+        const optionsComp = hasOptions  ? { component: 'b-select' } : {}
+        const component = hasOptions ? optionsComp : componentMap[attributes[field].type]
+        // const componentType = subtypeLookup[attributes[field].type]|| 'text'
         const disabled = !!attributes[field].configurable
       return {
         field,
         ...value.edit,
         ...attributes[field],
-        component: this.options[field] ? 'b-select' : componentMap[attributes[field].type],
-        componentType,
+        ...component,
         message: '',
         componentState: '',
         disabled,
