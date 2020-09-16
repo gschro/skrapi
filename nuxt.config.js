@@ -39,6 +39,7 @@ export default {
       ]
     }],
   ],
+  plugins: ['@/plugins/ckeditor.js', '@/plugins/vjsoneditor.js'],
   auth: {
     redirect: {
       login: '/auth/sign-in',

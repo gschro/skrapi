@@ -11,6 +11,8 @@
     "test": "jest"
   },
   "dependencies": {
+    "@ckeditor/ckeditor5-build-classic": "^22.0.0",
+    "@ckeditor/ckeditor5-vue": "^1.0.2",
     "@fortawesome/fontawesome-free": "^5.14.0",
     "@fortawesome/free-brands-svg-icons": "^5.14.0",
     "@fortawesome/free-regular-svg-icons": "^5.14.0",
@@ -22,7 +24,7 @@
     "nuxt-buefy": "^0.4.3",
     "nuxt-fontawesome": "^0.4.0",
     "pluralize": "^8.0.0",
-    "tiptap": "^1.29.6"
+    "v-jsoneditor": "^1.4.1"
   },
   "devDependencies": {
     "@vue/test-utils": "^1.0.3",

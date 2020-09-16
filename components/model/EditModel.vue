@@ -42,6 +42,7 @@ import FormFields from '~/components/FormFields'
 import SubLink from '~/components/SubLink'
 import HeadingOne from '~/components/HeadingOne'
 import FormSkeleton from '~/components/skeleton/FormSkeleton'
+import ClassicEditor from '@ckeditor/ckeditor5-build-classic'
 
 // mixins
 import pluralName from '~/mixins/pluralName'
@@ -111,7 +112,8 @@ export default {
       theModel: {},
       combined: [],
       relations: {},
-      options: {}
+      options: {},
+      editor: ClassicEditor,
     }
   },
   computed: {
@@ -141,7 +143,8 @@ export default {
     }
   },
   async fetch () {
-      // clean up api
+      // set up layout based on config data? or make configuragle at least
+      // clean up api (attrs in object for dynamicity, preRender hook, preSubmit hook)
       // refactor
       // unit tests
       // add validations (required, min/max, unique?, private (don't show), configurable (disable))
@@ -178,22 +181,19 @@ export default {
       },
       string: { component: 'b-input' },
       text: { component: 'b-input', componentType: 'textarea' },
-          richtext: { component: 'b-input' },
+      richtext: { component: 'ckeditor', editor: this.editor },
       email: { component: 'b-input', componentType: 'email' },
       password: { component: 'b-input', componentType: 'password' },
       integer: { component: 'b-numberinput', step: 1 },
       biginteger: { component: 'b-input', step: 1 },
       float: { component: 'b-numberinput' },
       decimal: { component: 'b-numberinput' },
-      date: { component: 'b-datepicker'},
+      date: { component: 'b-datepicker' },
       time: { component: 'b-clockpicker' },
       datetime: { component: 'b-datetimepicker' },
-      // date: { component: 'b-input' },
-      // time: { component: 'b-input', hourFormat: '24' },
-     // datetime: { component: 'b-input' },
       boolean: { component: 'b-switch' },
-          enumeration: { component: 'b-select' },
-          json: { component: 'b-input' },
+      enumeration: { component: 'b-select' },
+      json: { component: 'v-jsoneditor', jsonOptions: { mode: 'text' } },
       uid: { component: 'b-input' } // add front-end preview or hide?
     }
     // when "plugin": "upload" then b-upload
@@ -206,7 +206,7 @@ export default {
     const combined = Object.entries(metadatas)
       .map(([field, value]) => {
         const remote = attributes[field].via ? { remote: attributes[field].model } : {}
-        const hasOptions = this.options[field]
+        const hasOptions = this.options[field] || attributes[field].enum
         if (field === 'type') console.log('hasOpts', hasOptions)
         const options = hasOptions ? { options: hasOptions } : {}
         const optionsComp = hasOptions  ? { component: 'b-select' } : {}
@@ -260,21 +260,33 @@ export default {
     this.theModel = model
 
     dateFields.forEach(a => {
-
+console.log('type', a.type)
       if (this.theModel && this.theModel[a.field]){
-        console.log('date field',a.type)
-        // if(a.type === 'date') {
-          console.log('date tm field', this.theModel[a.field])
-          console.log('date theModel', new Date(Date.parse(this.theModel[a.field])))
-          this.theModel[a.field] = new Date(Date.parse(this.theModel[a.field]))
-        // }
+          if(a.type === 'date' || a.type === 'datetime') {
+            this.theModel[a.field] = new Date(Date.parse(this.theModel[a.field]))
+          }
+          if(a.type==='time'){
+            const dateObj = new Date();
+            const dateStr = dateObj.toISOString().split('T').shift();
+            const timeStr = this.theModel[a.field];
+            // const timeAndDate = moment(dateStr + ' ' + timeStr).toDate();
+            const timeAndDate = new Date(Date.parse(dateStr + ' ' + timeStr))
+            this.theModel[a.field] = timeAndDate
+            console.log("timeStr", timeStr,'dateSTr', dateStr, 'both', timeAndDate)
+          }
       }
       if (this.model && this.model[a.field]){
-        console.log('date field2',a)
-        if(a.type === 'date') {
-          console.log('date m field', this.theModel[a.field])
-          console.log('date model', new Date(Date.parse(this.model[a.field])))
+        if(a.type === 'date' || a.type === 'datetime') {
           this.model[a.field] = new Date(Date.parse(this.model[a.field]))
+        }
+        if(a.type === 'time') {
+            const dateObj = new Date();
+            const dateStr = dateObj.toISOString().split('T').shift();
+            const timeStr = this.model[a.field];
+            // const timeAndDate = moment(dateStr + ' ' + timeStr).toDate();
+            const timeAndDate = new Date(Date.parse(dateStr + ' ' + timeStr))
+            console.log("timeStr", timeStr,'dateSTr', dateStr, 'both', timeAndDate)
+            this.model[a.field] = timeAndDate
         }
       }
     })

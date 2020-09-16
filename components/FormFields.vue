@@ -5,7 +5,18 @@
     novalidate="true"
     class="columns is-mobile is-multiline">
     <b-field v-for="(field, key) of fields" :key="key" :label="field.label" :type="field.type" :message="field.message" :custom-class="requiredField(field.required)" class='column mb-3 is-one-third-widescreen is-12-mobile small-gap no-marginb'>
-      <component :is="field.component" v-model="modelObj[field.field]" :aria-required="field.required" :required="field.required" :disabled="field.disabled" :hour-format="field.hourFormat" :date-formatter="field.dateFormatter">
+      <component
+        :is="field.component"
+        :type="field.type"
+        v-model="modelObj[field.field]"
+        :aria-required="field.required"
+        :required="field.required"
+        :disabled="field.disabled"
+        :hour-format="field.hourFormat"
+        :date-formatter="field.dateFormatter"
+        :editor="field.editor"
+        :options="field.jsonOptions"
+      >
         <template v-if="field.component === 'b-select' && field.options" >
           <option v-for="(option, key) of field.options" :key="key">{{option}}</option>
         </template>
@@ -123,7 +134,31 @@ export default {
         }
       })
     },
+    setTime(field) {
+      console.log("field!", field)
+      const d = this.modelObj[field.field]
+      console.log('d!', d)
+      const time = d.toISOString().split('T').shift();
+      // const time = `${d.getHours()}:${d.getMinutes()}:${d.getSeconds()}`
+      console.log('TIME!', time)
+      this.modelObj[field.field] = time
+    },
+    parseTimeFields() {
+      console.log('here!')
+      const timeFields = this.fields.filter(a => a.type === 'time').forEach(a => {
+        console.log('here2!')
+        // this.setTime(a)
+      const d = this.modelObj[a.field]
+      console.log('d!', d)
+      const time = d.toISOString().split('T').shift();
+      const ft = a => String(a).padStart(2, '0')
+      const time2 = `${ft(d.getHours())}:${ft(d.getMinutes())}:${ft(d.getSeconds())}`
+      console.log('TIME!', time2)
+      this.modelObj[a.field] = time2
+      })
+    },
     submitForm: async function (e) {
+      this.parseTimeFields()
       this.requiredFields()
       if (this.errors.length > 0) {
         return
