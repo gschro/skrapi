@@ -7,15 +7,8 @@
     <b-field v-for="(field, key) of fields" :key="key" :label="field.label" :type="field.type" :message="field.message" :custom-class="requiredField(field.required)" class='column mb-3 is-one-third-widescreen is-12-mobile small-gap no-marginb'>
       <component
         :is="field.component"
-        :type="field.type"
-        v-model="modelObj[field.field]"
-        :aria-required="field.required"
-        :required="field.required"
-        :disabled="field.disabled"
-        :hour-format="field.hourFormat"
-        :date-formatter="field.dateFormatter"
-        :editor="field.editor"
-        :options="field.jsonOptions"
+        v-bind="field.attrs"
+        v-model="modelObj[field.type === 'time' ? `${field.field}_skrapi_time` : field.field]"
       >
         <template v-if="field.component === 'b-select' && field.options" >
           <option v-for="(option, key) of field.options" :key="key">{{option}}</option>
@@ -134,21 +127,21 @@ export default {
         }
       })
     },
-    setTime(field) {
-      console.log("field!", field)
-      const d = this.modelObj[field.field]
-      console.log('d!', d)
-      const time = d.toISOString().split('T').shift();
-      // const time = `${d.getHours()}:${d.getMinutes()}:${d.getSeconds()}`
-      console.log('TIME!', time)
-      this.modelObj[field.field] = time
-    },
+    // setTime(field) {
+    //   console.log("field!", field)
+    //   const d = this.modelObj[`${field.field}_skrapi_time`]
+    //   console.log('d!', d)
+    //   const time = d.toISOString().split('T').shift();
+    //   // const time = `${d.getHours()}:${d.getMinutes()}:${d.getSeconds()}`
+    //   console.log('TIME!', time)
+    //   this.modelObj[field.field] = time
+    // },
     parseTimeFields() {
       console.log('here!')
       const timeFields = this.fields.filter(a => a.type === 'time').forEach(a => {
         console.log('here2!')
         // this.setTime(a)
-      const d = this.modelObj[a.field]
+      const d = this.modelObj[`${a.field}_skrapi_time`]
       console.log('d!', d)
       const time = d.toISOString().split('T').shift();
       const ft = a => String(a).padStart(2, '0')

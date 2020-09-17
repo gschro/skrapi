@@ -175,13 +175,14 @@ export default {
     // const { data: meta } = await this.getObject(`/content-manager/content-types/application::${params.model}.${params.model}`)
     this.contentTypeMeta = meta
     const { metadatas, schema: { attributes }} = meta.contentType
+    const editor = this.editor
     const componentMap = {
       relation: { component: 'b-select' },
       string: { component: 'b-input' },
-      text: { component: 'b-input', componentType: 'textarea' },
-      richtext: { component: 'ckeditor', editor: this.editor },
-      email: { component: 'b-input', componentType: 'email' },
-      password: { component: 'b-input', componentType: 'password' },
+      text: { component: 'b-input', attrs: { type: 'textarea' } },
+      richtext: { component: 'ckeditor', attrs: { editor: this.editor } },
+      email: { component: 'b-input', attrs: { type: 'email' } },
+      password: { component: 'b-input', attrs: { type: 'password' } },
       integer: { component: 'b-numberinput', step: 1 },
       biginteger: { component: 'b-input', step: 1 },
       float: { component: 'b-numberinput' },
@@ -191,7 +192,7 @@ export default {
       datetime: { component: 'b-datetimepicker' },
       boolean: { component: 'b-switch' },
       enumeration: { component: 'b-select' },
-      json: { component: 'v-jsoneditor', jsonOptions: { mode: 'text' } },
+      json: { component: 'v-jsoneditor', attrs: {options: { mode: 'text' } } },
       uid: { component: 'b-input' } // add front-end preview or hide?
     }
     // when "plugin": "upload" then b-upload
@@ -203,6 +204,7 @@ export default {
     // }
     const combined = Object.entries(metadatas)
       .map(([field, value]) => {
+        const compMap = componentMap[attributes[field].type]
         const remote = attributes[field].via ? { remote: attributes[field].model } : {}
         const hasOptions = this.options[field] || attributes[field].enum
         if (field === 'type') console.log('hasOpts', hasOptions)
@@ -210,15 +212,26 @@ export default {
         const optionsComp = hasOptions  ? { component: 'b-select' } : {}
         const component = hasOptions ? optionsComp : componentMap[attributes[field].type]
         // const componentType = subtypeLookup[attributes[field].type]|| 'text'
-        const disabled = !!attributes[field].configurable
+        // const disabled = !!attributes[field].configurable
+        const { attrs = {}, ...comp } = component || {}
+        // const attrs = component && component.attrs || {}
+        attrs.disabled = !!attributes[field].configurable
+        if(attributes[field].required){
+          attrs['aria-required'] = true
+          attrs.required = true
+        }
+
+        // min/max validations here
+        // unique? via remote?
+        // uid?
+
       return {
         field,
         ...value.edit,
         ...attributes[field],
-        ...component,
+        ...{ ...component, ...attrs },
         message: '',
         componentState: '',
-        disabled,
         ...remote,
         ...options
       }
@@ -228,12 +241,7 @@ export default {
 
       const dateFields = combined.filter(a => ['date','datetime','time'].includes(a.type))
 
-      console.log('combined', combined)
-      // .reduce((field, acc)=>{
-      //   acc[field] =
-      //   return acc
-      // }, {})
-
+    console.log('combined', combined)
     const modelsWRels = combined.filter(a => a.remote)
     const relations = {}
     const memo = {}
@@ -255,11 +263,8 @@ export default {
     this.combined = combined
 
     const model = await this.fetchAndPopModel(params.model, params.id, combined)
-    console.log('modjson', model)
     this.theModel = model
-console.log('some_json', this.theModel['some_json'])
     dateFields.forEach(a => {
-console.log('type', a.type)
       if (this.theModel && this.theModel[a.field]){
           if(a.type === 'date' || a.type === 'datetime') {
             this.theModel[a.field] = new Date(Date.parse(this.theModel[a.field]))
@@ -268,10 +273,8 @@ console.log('type', a.type)
             const dateObj = new Date();
             const dateStr = dateObj.toISOString().split('T').shift();
             const timeStr = this.theModel[a.field];
-            // const timeAndDate = moment(dateStr + ' ' + timeStr).toDate();
             const timeAndDate = new Date(Date.parse(dateStr + ' ' + timeStr))
-            this.theModel[a.field] = timeAndDate
-            console.log("timeStr", timeStr,'dateSTr', dateStr, 'both', timeAndDate)
+            this.theModel[`${a.field}_skrapi_time`] = timeAndDate
           }
       }
       if (this.model && this.model[a.field]){
@@ -282,9 +285,7 @@ console.log('type', a.type)
             const dateObj = new Date();
             const dateStr = dateObj.toISOString().split('T').shift();
             const timeStr = this.model[a.field];
-            // const timeAndDate = moment(dateStr + ' ' + timeStr).toDate();
             const timeAndDate = new Date(Date.parse(dateStr + ' ' + timeStr))
-            console.log("timeStr", timeStr,'dateSTr', dateStr, 'both', timeAndDate)
             this.model[a.field] = timeAndDate
         }
       }
