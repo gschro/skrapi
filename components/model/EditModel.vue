@@ -176,9 +176,7 @@ export default {
     this.contentTypeMeta = meta
     const { metadatas, schema: { attributes }} = meta.contentType
     const componentMap = {
-      relation: {
-        component: 'b-select'
-      },
+      relation: { component: 'b-select' },
       string: { component: 'b-input' },
       text: { component: 'b-input', componentType: 'textarea' },
       richtext: { component: 'ckeditor', editor: this.editor },
@@ -257,8 +255,9 @@ export default {
     this.combined = combined
 
     const model = await this.fetchAndPopModel(params.model, params.id, combined)
+    console.log('modjson', model)
     this.theModel = model
-
+console.log('some_json', this.theModel['some_json'])
     dateFields.forEach(a => {
 console.log('type', a.type)
       if (this.theModel && this.theModel[a.field]){
