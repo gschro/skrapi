@@ -8,7 +8,7 @@
       <component
         :is="field.component"
         v-bind="field.attrs"
-        v-model="modelObj[field.type === 'time' ? `${field.field}_skrapi_time` : field.field]"
+        v-model="modelObj[field.type === 'time' ? new Symbol(field.field) : field.field]"
       >
         <template v-if="field.component === 'b-select' && field.options" >
           <option v-for="(option, key) of field.options" :key="key">{{option}}</option>
@@ -79,6 +79,10 @@ export default {
     },
     modelName: {
       type: String
+    },
+    stayOnPage: {
+      type: Boolean,
+      default: true
     }
   },
   data () {
@@ -127,27 +131,13 @@ export default {
         }
       })
     },
-    // setTime(field) {
-    //   console.log("field!", field)
-    //   const d = this.modelObj[`${field.field}_skrapi_time`]
-    //   console.log('d!', d)
-    //   const time = d.toISOString().split('T').shift();
-    //   // const time = `${d.getHours()}:${d.getMinutes()}:${d.getSeconds()}`
-    //   console.log('TIME!', time)
-    //   this.modelObj[field.field] = time
-    // },
     parseTimeFields() {
-      console.log('here!')
       const timeFields = this.fields.filter(a => a.type === 'time').forEach(a => {
-        console.log('here2!')
-        // this.setTime(a)
-      const d = this.modelObj[`${a.field}_skrapi_time`]
-      console.log('d!', d)
+      const d = this.modelObj[new Symbol(a.field)]
       const time = d.toISOString().split('T').shift();
-      const ft = a => String(a).padStart(2, '0')
-      const time2 = `${ft(d.getHours())}:${ft(d.getMinutes())}:${ft(d.getSeconds())}`
-      console.log('TIME!', time2)
-      this.modelObj[a.field] = time2
+      const formatTimeStr = a => String(a).padStart(2, '0')
+      const timeStr = `${formatTimeStr(d.getHours())}:${formatTimeStr(d.getMinutes())}:${formatTimeStr(d.getSeconds())}`
+      this.modelObj[a.field] = timeStr
       })
     },
     submitForm: async function (e) {
@@ -157,9 +147,50 @@ export default {
         return
       }
 
-      await this.$axios[this.axiosMethod](this.finalRoute, this.modelObj)
-      const join = this.redirect.includes('?') ? '&' : '?'
-      this.$router.push(`${this.redirect}${join}message=${this.messageLabel}`)
+      try {
+        const resp = await this.$axios[this.axiosMethod](this.finalRoute, this.modelObj)
+        const join = this.redirect.includes('?') ? '&' : '?'
+        if (!this.stayOnPage){
+          this.$router.push(`${this.redirect}${join}message=${this.messageLabel}`)
+        } else {
+          this.$buefy.toast.open({
+            duration: 5000,
+            message: this.messageLabel,
+            position: 'is-top',
+            type: 'is-success',
+            queue: false
+          })
+        }
+      } catch (err) {
+        try {
+        const { data: { message, data: { errors } } } = err
+        // errrors.field lookup attributes
+        const messages = Object.keys(errors).reduce((acc, key) => {
+          const [field] = this.fields.filter(a => a.field === key)
+          const error = errors[key].map(e => e.replace(key, field.label))
+          return [...acc, ...error]
+        }, [])
+        const errorType = message.replace('Error', '')
+        console.log('messages', messages)
+        const output = messages.join(', ')
+        console.log('output')
+        this.$buefy.toast.open({
+          duration: 5000,
+          message: `${errorType} Error${messages.length > 1 ? 's' : ''}: ${output}`,
+          position: 'is-bottom',
+          type: 'is-danger',
+          queue: false
+        })
+        } catch (e) {
+          this.$buefy.toast.open({
+          duration: 5000,
+          message: `Error: ${err.statusText}`,
+          position: 'is-bottom',
+          type: 'is-top',
+          queue: false
+        })
+        }
+      }
     }
   },
 }

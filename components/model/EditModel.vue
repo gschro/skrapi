@@ -143,27 +143,27 @@ export default {
     }
   },
   async fetch () {
-      // set up layout based on config data? or make configuragle at least
+      // make layout configurable
       // clean up api (attrs in object for dynamicity, preRender hook, preSubmit hook)
-      // refactor
-      // unit tests
-      // add validations (required, min/max, unique?, private (don't show), configurable (disable))
-      // add other field types
-      // add component support
+      // refactor (externalize config?, maybe via plugin or nuxt or env vars)
+      // add uid support
+      // caching of data (esp content type) via vuex
+      // allow choosing to stay on page after save
       // add other relationship types
-      // caching of data (esp content type)
+      // unit tests
+
+      // post release
+      // fix min/max validations is-danger missing
+      // add custom validations
+      // add validations (unique? via remote?)
+      // allow configuration per field
       // allow using slug (or other field? instead of id)
       // add remote filtering, maybe templating for dropdown
-      // list customizations/pagination, _limit=30, _limit=-1, _start=10&_limit=10
       // allow related fields in table/lists
       // add counts for model entries
-      // externalize config, maybe via plugin or nuxt or env vars
-      // add tabs?
+      // sidebar for content types?
       // bulk updates? select/delete from lists
-      // allow choosing to stay on page after save
-      // const route = this.modelName || this.pluralLower
-      // const populatedModel = this.method === 'put' ? await this.fetchAndPopModel(route) : {}
-      // this.finalModel = { ...populatedModel, ...this.model }
+      // add tabs?
 
     const { path, params } = this.$route
     this.path = path
@@ -183,8 +183,8 @@ export default {
       richtext: { component: 'ckeditor', attrs: { editor: this.editor } },
       email: { component: 'b-input', attrs: { type: 'email' } },
       password: { component: 'b-input', attrs: { type: 'password' } },
-      integer: { component: 'b-numberinput', step: 1 },
-      biginteger: { component: 'b-input', step: 1 },
+      integer: { component: 'b-numberinput', attrs: { step: 1 }},
+      biginteger: { component: 'b-input', attrs: { step: 1 }},
       float: { component: 'b-numberinput' },
       decimal: { component: 'b-numberinput' },
       date: { component: 'b-datepicker' },
@@ -197,33 +197,31 @@ export default {
     }
     // when "plugin": "upload" then b-upload
     this.options['type'] = ['Roller Coaster', 'Flat Ride', 'Dark Ride', 'Water Ride', 'Family Ride', 'Kids Ride', 'Thrill Ride'].sort()
-    // const subtypeLookup = {
-    //   password: 'password',
-    //   text: 'textarea',
-    //   richtext: 'textarea'
-    // }
     const combined = Object.entries(metadatas)
       .map(([field, value]) => {
         const compMap = componentMap[attributes[field].type]
         const remote = attributes[field].via ? { remote: attributes[field].model } : {}
         const hasOptions = this.options[field] || attributes[field].enum
-        if (field === 'type') console.log('hasOpts', hasOptions)
         const options = hasOptions ? { options: hasOptions } : {}
         const optionsComp = hasOptions  ? { component: 'b-select' } : {}
-        const component = hasOptions ? optionsComp : componentMap[attributes[field].type]
+        const component = hasOptions ? optionsComp : compMap
         // const componentType = subtypeLookup[attributes[field].type]|| 'text'
         // const disabled = !!attributes[field].configurable
         const { attrs = {}, ...comp } = component || {}
         // const attrs = component && component.attrs || {}
+        console.log('field!', field)
+        if(attributes[field].type === 'integer') console.log('attributes', attributes[field])
         attrs.disabled = !!attributes[field].configurable
         if(attributes[field].required){
           attrs['aria-required'] = true
           attrs.required = true
         }
-
-        // min/max validations here
-        // unique? via remote?
-        // uid?
+        if(attributes[field].min){
+          attrs.min = String(attributes[field].min)
+        }
+        if(attributes[field].max){
+          attrs.max = String(attributes[field].max)
+        }
 
       return {
         field,
