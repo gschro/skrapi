@@ -8,13 +8,34 @@
       <component
         :is="field.component"
         v-bind="field.attrs"
-        v-model="modelObj[field.type === 'time' ? new Symbol(field.field) : field.field]"
+        v-model="modelObj[field.type === 'time' ? `${field.field}_skrapi_time` : field.field]"
       >
         <template v-if="field.component === 'b-select' && field.options" >
           <option v-for="(option, key) of field.options" :key="key">{{option}}</option>
         </template>
         <template v-if="field.component === 'b-select' && field.remote">
           <option v-for="(option, key) of remotes[field.field]" :key="key" :value="option.id">{{option[field.mainField]}}</option>
+        </template>
+        <template v-if="field.component === 'b-upload'">
+          <span class="file-cta">
+            <b-icon class="file-icon" icon="upload"></b-icon>
+            <span class="file-label">Click to upload</span>
+          </span>
+          <div class="tags">
+            <span class="tag is-primary" v-if="!field.attrs.multiple && modelObj[field.field]">
+              {{ modelObj[field.field].name }}
+              <button class="delete is-small" type="button" @click.prevent="nullField(field.field)"></button>
+            </span>
+            <span v-if="field.attrs.multiple" v-for="(file, index) in modelObj[field.field]"
+                :key="index"
+                class="tag is-primary" >
+                {{file.name}}
+                <button class="delete is-small"
+                    type="button"
+                    @click.prevent="deleteDropFile(field.field, index)">
+                </button>
+            </span>
+        </div>
         </template>
       </component>
     </b-field>
@@ -112,6 +133,12 @@ export default {
     }
   },
   methods: {
+    nullField(field) {
+      this.modelObj[field] = null
+    },
+    deleteDropFile(field, index) {
+      this.modelObj[field].splice(index, 1)
+    },
     requiredField: (required) => {
       return required ? 'required' : ''
     },
@@ -133,7 +160,7 @@ export default {
     },
     parseTimeFields() {
       const timeFields = this.fields.filter(a => a.type === 'time').forEach(a => {
-      const d = this.modelObj[new Symbol(a.field)]
+      const d = this.modelObj[`${a.field}_skrapi_time`]
       const time = d.toISOString().split('T').shift();
       const formatTimeStr = a => String(a).padStart(2, '0')
       const timeStr = `${formatTimeStr(d.getHours())}:${formatTimeStr(d.getMinutes())}:${formatTimeStr(d.getSeconds())}`

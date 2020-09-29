@@ -19,7 +19,7 @@ import fetchModel from '~/mixins/fetchModel'
 import sort from '~/mixins/sort'
 
 export default {
-  name: 'EditPark',
+  name: 'EditModelContainer',
   middleware: 'admin',
   mixins: [
     editLabels,
@@ -73,8 +73,8 @@ export default {
           component: 'b-select',
           options: [
             'Blog/Social',
-            'Park Operator',
-            'Ride Design',
+            'Operations',
+            'Design',
           ],
           required: true
         },

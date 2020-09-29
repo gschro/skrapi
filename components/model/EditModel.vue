@@ -192,8 +192,9 @@ export default {
       datetime: { component: 'b-datetimepicker' },
       boolean: { component: 'b-switch' },
       enumeration: { component: 'b-select' },
-      json: { component: 'v-jsoneditor', attrs: {options: { mode: 'text' } } },
-      uid: { component: 'b-input' } // add front-end preview or hide?
+      json: { component: 'v-jsoneditor', attrs: { options: { mode: 'text' } } },
+      uid: { component: 'b-input' }, // add front-end preview or hide?
+      media: { component: 'b-upload', attrs: {} }
     }
     // when "plugin": "upload" then b-upload
     this.options['type'] = ['Roller Coaster', 'Flat Ride', 'Dark Ride', 'Water Ride', 'Family Ride', 'Kids Ride', 'Thrill Ride'].sort()
@@ -207,7 +208,10 @@ export default {
         const component = hasOptions ? optionsComp : compMap
         // const componentType = subtypeLookup[attributes[field].type]|| 'text'
         // const disabled = !!attributes[field].configurable
-        const { attrs = {}, ...comp } = component || {}
+        console.log('compMap', compMap)
+        console.log('field', value)
+        const { attrs: pAttrs = {}, ...comp } = component || {}
+        const attrs = Object.assign({}, pAttrs)
         // const attrs = component && component.attrs || {}
         console.log('field!', field)
         if(attributes[field].type === 'integer') console.log('attributes', attributes[field])
@@ -222,12 +226,17 @@ export default {
         if(attributes[field].max){
           attrs.max = String(attributes[field].max)
         }
-
+        if(attributes[field].type === 'media' && attributes[field].multiple){
+          attrs.multiple = attributes[field].multiple
+        }
+console.log('attrs', attrs)
       return {
         field,
         ...value.edit,
         ...attributes[field],
-        ...{ ...component, ...attrs },
+        // ...{ ...component, ...attrs },
+        component: comp.component,
+        attrs,
         message: '',
         componentState: '',
         ...remote,
