@@ -49,6 +49,71 @@ import pluralName from '~/mixins/pluralName'
 import fetchModel from '~/mixins/fetchModel'
 import editLabels from '~/mixins/editLabels'
 
+const toBool = a => !!a
+const condition = toBool
+
+const componentMap = {
+  relation: { component: 'b-select' },
+  string: { component: 'b-input' },
+  text: { component: 'b-input', attrs: { type: 'textarea' } },
+  richtext: { component: 'ckeditor', attrs: {} },
+  email: { component: 'b-input', attrs: { type: 'email' } },
+  password: { component: 'b-input', attrs: { type: 'password' } },
+  integer: { component: 'b-numberinput', attrs: { step: 1 }},
+  biginteger: { component: 'b-input', attrs: { step: 1 }},
+  float: { component: 'b-numberinput' },
+  decimal: { component: 'b-numberinput' },
+  date: { component: 'b-datepicker' },
+  time: { component: 'b-clockpicker' },
+  datetime: { component: 'b-datetimepicker' },
+  boolean: { component: 'b-switch' },
+  enumeration: { component: 'b-select' },
+  json: { component: 'v-jsoneditor', attrs: { options: { mode: 'text' } } },
+  uid: { component: 'b-input' }, // add front-end preview or hide?
+  media: { component: 'b-upload', attrs: {} }
+}
+
+const conditionalAttrs = [
+  {
+    field: 'disabled',
+    valueKey: 'configurable',
+    preTransform: toBool
+  },
+  {
+    field: 'required',
+    valueKey: 'required'
+  },
+  {
+    field: 'aria-required',
+    valueKey: 'required'
+  },
+  {
+    field: 'min',
+    valueKey: 'min',
+    postTransform: a => String(a)
+  },
+  {
+    field: 'max',
+    valueKey: 'max',
+    postTransform: a => String(a)
+  },
+  {
+    field: 'multiple',
+    valueKey: 'multiple',
+    condition: (value, field) => field.type === 'media' && field.multiple
+  }
+]
+
+const addAttribute = (obj, { add, field, value, postTransform = a => a }) => {
+  if (add) {
+    return {
+      ...obj,
+      [field]: postTransform(value)
+    }
+  }
+  return obj
+}
+
 export default {
   name: 'EditModel',
   mixins: [
@@ -153,6 +218,8 @@ export default {
       // unit tests
 
       // post release
+      // media upload filter types
+      // add support for single types etc.
       // fix min/max validations is-danger missing
       // add custom validations
       // add validations (unique? via remote?)
@@ -175,83 +242,56 @@ export default {
     // const { data: meta } = await this.getObject(`/content-manager/content-types/application::${params.model}.${params.model}`)
     this.contentTypeMeta = meta
     const { metadatas, schema: { attributes }} = meta.contentType
-    const editor = this.editor
-    const componentMap = {
-      relation: { component: 'b-select' },
-      string: { component: 'b-input' },
-      text: { component: 'b-input', attrs: { type: 'textarea' } },
-      richtext: { component: 'ckeditor', attrs: { editor: this.editor } },
-      email: { component: 'b-input', attrs: { type: 'email' } },
-      password: { component: 'b-input', attrs: { type: 'password' } },
-      integer: { component: 'b-numberinput', attrs: { step: 1 }},
-      biginteger: { component: 'b-input', attrs: { step: 1 }},
-      float: { component: 'b-numberinput' },
-      decimal: { component: 'b-numberinput' },
-      date: { component: 'b-datepicker' },
-      time: { component: 'b-clockpicker' },
-      datetime: { component: 'b-datetimepicker' },
-      boolean: { component: 'b-switch' },
-      enumeration: { component: 'b-select' },
-      json: { component: 'v-jsoneditor', attrs: { options: { mode: 'text' } } },
-      uid: { component: 'b-input' }, // add front-end preview or hide?
-      media: { component: 'b-upload', attrs: {} }
-    }
-    // when "plugin": "upload" then b-upload
-    this.options['type'] = ['Roller Coaster', 'Flat Ride', 'Dark Ride', 'Water Ride', 'Family Ride', 'Kids Ride', 'Thrill Ride'].sort()
+
+    componentMap.richtext.attrs.editor = this.editor
+
     const combined = Object.entries(metadatas)
       .map(([field, value]) => {
-        const compMap = componentMap[attributes[field].type]
-        const remote = attributes[field].via ? { remote: attributes[field].model } : {}
+        console.log('field', field, value)
         const hasOptions = this.options[field] || attributes[field].enum
-        const options = hasOptions ? { options: hasOptions } : {}
-        const optionsComp = hasOptions  ? { component: 'b-select' } : {}
-        const component = hasOptions ? optionsComp : compMap
-        // const componentType = subtypeLookup[attributes[field].type]|| 'text'
-        // const disabled = !!attributes[field].configurable
-        console.log('compMap', compMap)
-        console.log('field', value)
+        const component = hasOptions ? { component: 'b-select' } : componentMap[attributes[field].type]
+
         const { attrs: pAttrs = {}, ...comp } = component || {}
         const attrs = Object.assign({}, pAttrs)
-        // const attrs = component && component.attrs || {}
-        console.log('field!', field)
-        if(attributes[field].type === 'integer') console.log('attributes', attributes[field])
-        attrs.disabled = !!attributes[field].configurable
-        if(attributes[field].required){
-          attrs['aria-required'] = true
-          attrs.required = true
+
+        // add value.edit.placeholder
+        const finalAttrs = conditionalAttrs.map(({ valueKey, condition = toBool, ...attribute }) => {
+          const value = attributes[field][valueKey]
+          const add = condition(value, attributes[field])
+          return {
+            add,
+            value,
+            ...attribute
+          }
+        }).reduce((acc, cv) => addAttribute(acc, cv), attrs)
+
+        const remote = attributes[field].via ? { remote: attributes[field].model } : {}
+        const options = hasOptions ? { options: hasOptions } : {}
+
+        return {
+          field,
+          ...value.edit,
+          ...attributes[field],
+          component: comp.component,
+          attrs: finalAttrs,
+          ...remote,
+          ...options,
+          message: '',
+          componentState: ''
         }
-        if(attributes[field].min){
-          attrs.min = String(attributes[field].min)
-        }
-        if(attributes[field].max){
-          attrs.max = String(attributes[field].max)
-        }
-        if(attributes[field].type === 'media' && attributes[field].multiple){
-          attrs.multiple = attributes[field].multiple
-        }
-console.log('attrs', attrs)
-      return {
-        field,
-        ...value.edit,
-        ...attributes[field],
-        // ...{ ...component, ...attrs },
-        component: comp.component,
-        attrs,
-        message: '',
-        componentState: '',
-        ...remote,
-        ...options
-      }
       })
-      .filter(({visible}) => visible)
+      .filter(({ visible }) => visible)
       .filter((a) => !a.private)
 
-      const dateFields = combined.filter(a => ['date','datetime','time'].includes(a.type))
+    this.combined = combined
+
+    const dateFields = combined.filter(a => ['date','datetime','time'].includes(a.type))
 
     console.log('combined', combined)
     const modelsWRels = combined.filter(a => a.remote)
     const relations = {}
     const memo = {}
+
     for(const model of modelsWRels){
       const relModel = this.makePlural(model.model)
       if (this.remotes[relModel]){
@@ -266,11 +306,12 @@ console.log('attrs', attrs)
         memo[relModel] = resp
       }
     }
+
     this.finalRemotes = { ...relations, ...this.remotes }
-    this.combined = combined
 
     const model = await this.fetchAndPopModel(params.model, params.id, combined)
     this.theModel = model
+
     dateFields.forEach(a => {
       if (this.theModel && this.theModel[a.field]){
           if(a.type === 'date' || a.type === 'datetime') {
@@ -299,11 +340,9 @@ console.log('attrs', attrs)
     })
     this.finalModel = { ...this.theModel, ...this.model }
 
-
-    // fix date fields: new Date(Date.parse(a))
-      this.$emit(`got:initial:model:${this.contentTypeLabel.toLowerCase()}`, this.initialModel)
-      this.$emit(`got:model:${this.contentTypeLabel.toLowerCase()}`, this.populatedModel)
-      this.$emit(`got:merged:model:${this.contentTypeLabel.toLowerCase()}`, this.finalModel)
+    this.$emit(`got:initial:model:${this.contentTypeLabel.toLowerCase()}`, this.initialModel)
+    this.$emit(`got:model:${this.contentTypeLabel.toLowerCase()}`, this.populatedModel)
+    this.$emit(`got:merged:model:${this.contentTypeLabel.toLowerCase()}`, this.finalModel)
   },
   fetchOnServer: false,
 }
