@@ -4,29 +4,29 @@
     method="post"
     novalidate="true"
     class="columns is-mobile is-multiline">
-    <b-field v-for="(field, key) of fields" :key="key" :label="field.label" :type="field.type" :message="field.message" :custom-class="requiredField(field.required)" class='column mb-3 is-one-third-widescreen is-12-mobile small-gap no-marginb'>
+    <component :is='wrapperComponent' v-for="(field, key) of fields" :key="key" :label="field.label" :type="field.type" :message="field.message" :custom-class="requiredField(field.required)" :class="field.component.class">
       <component
-        :is="field.component"
-        v-bind="field.attrs"
-        v-model="modelObj[field.type === 'time' ? `${field.field}_skrapi_time` : field.field]"
+        :is="field.component.is"
+        v-bind="field.component.attrs"
+        v-model="modelObj[valueKey(field)]"
       >
-        <template v-if="field.component === 'b-select' && field.options" >
-          <option v-for="(option, key) of field.options" :key="key">{{option}}</option>
+        <template v-if="field.component.is === 'b-select' && field.component.options" >
+          <option v-for="(option, key) of field.component.options" :key="key">{{option}}</option>
         </template>
-        <template v-if="field.component === 'b-select' && field.remote">
+        <template v-if="field.component.is === 'b-select' && field.component.remote">
           <option v-for="(option, key) of remotes[field.field]" :key="key" :value="option.id">{{option[field.mainField]}}</option>
         </template>
-        <template v-if="field.component === 'b-upload'">
+        <template v-if="field.component.is === 'b-upload'">
           <span class="file-cta">
             <b-icon class="file-icon" icon="upload"></b-icon>
             <span class="file-label">Click to upload</span>
           </span>
           <div class="tags">
-            <span class="tag is-primary" v-if="!field.attrs.multiple && modelObj[field.field]">
+            <span class="tag is-primary" v-if="!field.component.attrs.multiple && modelObj[field.field]">
               {{ modelObj[field.field].name }}
               <button class="delete is-small" type="button" @click.prevent="nullField(field.field)"></button>
             </span>
-            <span v-if="field.attrs.multiple" v-for="(file, index) in modelObj[field.field]"
+            <span v-if="field.component.attrs.multiple" v-for="(file, index) in modelObj[field.field]"
                 :key="index"
                 class="tag is-primary" >
                 {{file.name}}
@@ -38,7 +38,7 @@
         </div>
         </template>
       </component>
-    </b-field>
+    </component>
     <slot></slot>
     <div class="column is-12">
       <b-button tag="input"
@@ -104,6 +104,10 @@ export default {
     stayOnPage: {
       type: Boolean,
       default: true
+    },
+    wrapperComponent: {
+      type: String,
+      default: 'div'
     }
   },
   data () {
@@ -133,6 +137,9 @@ export default {
     }
   },
   methods: {
+    valueKey(field) {
+      return field.type === 'time' ? `${field.field}_skrapi_time` : field.field
+    },
     nullField(field) {
       this.modelObj[field] = null
     },
@@ -220,5 +227,13 @@ export default {
       }
     }
   },
+  fetch() {
+    this.fields.filter(a => a.default)
+      .forEach(a => {
+        if (!this.modelObj[this.valueKey(a)]){
+          this.modelObj[this.valueKey(a)] = a.default
+        }
+      })
+  }
 }
 </script>

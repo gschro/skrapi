@@ -23,6 +23,7 @@
         :remotes="finalRemotes"
         :redirect="redirect"
         :modelName="modelName"
+        :wrapperComponent="wrapperComponent"
       >
       </form-fields>
     </fetch-pending>
@@ -69,9 +70,13 @@ const componentMap = {
   boolean: { component: 'b-switch' },
   enumeration: { component: 'b-select' },
   json: { component: 'v-jsoneditor', attrs: { options: { mode: 'text' } } },
-  uid: { component: 'b-input' }, // add front-end preview or hide?
+  uid: { component: 'b-input' },
   media: { component: 'b-upload', attrs: {} }
 }
+
+Object.keys(componentMap).forEach(key => {
+  componentMap[key].class = 'is-one-third-widescreen is-12-mobile column mb-3 small-gap no-marginb'
+})
 
 const conditionalAttrs = [
   {
@@ -101,6 +106,10 @@ const conditionalAttrs = [
     field: 'multiple',
     valueKey: 'multiple',
     condition: (value, field) => field.type === 'media' && field.multiple
+  },
+  {
+    field: 'placeholder',
+    valueKey: 'placeholder'
   }
 ]
 
@@ -179,6 +188,7 @@ export default {
       relations: {},
       options: {},
       editor: ClassicEditor,
+      wrapperComponent: 'b-field'
     }
   },
   computed: {
@@ -208,12 +218,10 @@ export default {
     }
   },
   async fetch () {
-      // make layout configurable
       // clean up api (attrs in object for dynamicity, preRender hook, preSubmit hook)
       // refactor (externalize config?, maybe via plugin or nuxt or env vars)
-      // add uid support
+      // uid, add front-end preview or hide?
       // caching of data (esp content type) via vuex
-      // allow choosing to stay on page after save
       // add other relationship types
       // unit tests
 
@@ -242,42 +250,44 @@ export default {
     // const { data: meta } = await this.getObject(`/content-manager/content-types/application::${params.model}.${params.model}`)
     this.contentTypeMeta = meta
     const { metadatas, schema: { attributes }} = meta.contentType
-
     componentMap.richtext.attrs.editor = this.editor
 
     const combined = Object.entries(metadatas)
       .map(([field, value]) => {
-        console.log('field', field, value)
-        const hasOptions = this.options[field] || attributes[field].enum
-        const component = hasOptions ? { component: 'b-select' } : componentMap[attributes[field].type]
-
-        const { attrs: pAttrs = {}, ...comp } = component || {}
+        const attribute = { ...value.edit, ...attributes[field] }
+        const { attrs: pAttrs = {}, ...comp } = componentMap[attribute.type] || {}
         const attrs = Object.assign({}, pAttrs)
 
-        // add value.edit.placeholder
-        const finalAttrs = conditionalAttrs.map(({ valueKey, condition = toBool, ...attribute }) => {
-          const value = attributes[field][valueKey]
-          const add = condition(value, attributes[field])
+        const finalAttrs = conditionalAttrs.map(({ valueKey, condition = toBool, ...attrib }) => {
+          const value = attribute[valueKey]
+          const add = condition(value, attribute)
           return {
             add,
             value,
-            ...attribute
+            ...attrib
           }
         }).reduce((acc, cv) => addAttribute(acc, cv), attrs)
 
-        const remote = attributes[field].via ? { remote: attributes[field].model } : {}
+        const hasOptions = this.options[field] || attribute.enum
         const options = hasOptions ? { options: hasOptions } : {}
+        const remote = attribute.via ? { remote: attribute.model } : {}
+        const { default: defaultValue, description, editable, label, required, type, unique, visible } = attribute
+        const commonAttrs = {
+          default: defaultValue, description, editable, label, required, type, unique, visible
+        }
 
         return {
           field,
-          ...value.edit,
-          ...attributes[field],
-          component: comp.component,
-          attrs: finalAttrs,
-          ...remote,
-          ...options,
-          message: '',
-          componentState: ''
+          ...commonAttrs,
+          component: {
+            is: comp.component,
+            attrs: finalAttrs,
+            class: comp.class,
+            message: '',
+            componentState: '',
+            ...options,
+            ...remote
+          }
         }
       })
       .filter(({ visible }) => visible)
