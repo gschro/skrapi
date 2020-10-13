@@ -21,23 +21,25 @@
             <b-icon class="file-icon" icon="upload"></b-icon>
             <span class="file-label">Click to upload</span>
           </span>
-          <div class="tags">
-            <span class="tag is-primary" v-if="!field.component.attrs.multiple && modelObj[field.field]">
-              {{ modelObj[field.field].name }}
-              <button class="delete is-small" type="button" @click.prevent="nullField(field.field)"></button>
-            </span>
-            <span v-if="field.component.attrs.multiple" v-for="(file, index) in modelObj[field.field]"
-                :key="index"
-                class="tag is-primary" >
-                {{file.name}}
-                <button class="delete is-small"
-                    type="button"
-                    @click.prevent="deleteDropFile(field.field, index)">
-                </button>
-            </span>
-        </div>
         </template>
       </component>
+      <template v-if="field.component.is === 'b-upload'">
+        <div class="tags">
+          <span class="tag is-primary" v-if="!field.component.attrs.multiple && modelObj[field.field]">
+            {{ modelObj[field.field].name }}
+            <button class="delete is-small" type="button" @click.prevent="nullField(field.field)"></button>
+          </span>
+          <span v-else v-for="(file, index) in modelObj[field.field]"
+              :key="index"
+              class="tag is-primary" >
+              {{file.name}}
+              <button class="delete is-small"
+                  type="button"
+                  @click.prevent.stop="deleteDropFile(field.field, index)">
+              </button>
+          </span>
+        </div>
+      </template>
     </component>
     <slot></slot>
     <div class="column is-12">
@@ -113,7 +115,9 @@ export default {
   data () {
     return {
       modelObj: this.model,
-      errors: []
+      errors: [],
+      filesToDelete: [],
+      fileDeleteError: false
     }
   },
   computed: {
@@ -138,13 +142,26 @@ export default {
   },
   methods: {
     valueKey(field) {
-      return field.type === 'time' ? `${field.field}_skrapi_time` : field.field
+      switch(field.type) {
+        case 'time':
+          return `${field.field}_skrapi_time`
+        // case 'media':
+        //   return `files.${field.field}`
+        default:
+          return field.field
+      }
+      // return field.type === 'time' ? `${field.field}_skrapi_time` : field.field
     },
     nullField(field) {
+      this.filesToDelete.push(this.modelObj[field])
       this.modelObj[field] = null
+      this.modelObj[`files.${field}`] = null
     },
     deleteDropFile(field, index) {
+      this.filesToDelete.push(this.modelObj[field][index])
       this.modelObj[field].splice(index, 1)
+      // nullField(field.field)
+      //stage file for delete
     },
     requiredField: (required) => {
       return required ? 'required' : ''
@@ -167,23 +184,61 @@ export default {
     },
     parseTimeFields() {
       const timeFields = this.fields.filter(a => a.type === 'time').forEach(a => {
-      const d = this.modelObj[`${a.field}_skrapi_time`]
-      const time = d.toISOString().split('T').shift();
-      const formatTimeStr = a => String(a).padStart(2, '0')
-      const timeStr = `${formatTimeStr(d.getHours())}:${formatTimeStr(d.getMinutes())}:${formatTimeStr(d.getSeconds())}`
-      this.modelObj[a.field] = timeStr
+        const d = this.modelObj[`${a.field}_skrapi_time`]
+        if (d) {
+          const time = d.toISOString().split('T').shift()
+          const formatTimeStr = a => String(a).padStart(2, '0')
+          const timeStr = `${formatTimeStr(d.getHours())}:${formatTimeStr(d.getMinutes())}:${formatTimeStr(d.getSeconds())}`
+          this.modelObj[a.field] = timeStr
+        }
       })
+    },
+    async deleteFiles() {
+      for(const id of this.filesToDelete) {
+        try {
+          await this.$axios.delete(`/files/uploads/${id}`)
+        } catch (e) {
+          this.fileDeleteError = true
+        }
+      }
+      this.filesToDelete = []
     },
     submitForm: async function (e) {
       this.parseTimeFields()
       this.requiredFields()
+
       if (this.errors.length > 0) {
         return
       }
 
+      const formData = this.fields.filter(a => a.type === 'media')
+        .reduce((acc, mediaField) => {
+            [].concat(this.modelObj[mediaField.field]).forEach((file, index) => {
+              if (file instanceof File){
+                acc.append(`files.${mediaField.field}`, file, file.name)
+              }
+            })
+            return acc
+        },
+        new FormData);
+
+        const finalData = Object.assign({}, this.modelObj)
+        this.fields.filter(a => a.type === 'media' && a.component.attrs.multiple).forEach(media => {
+          const files = []
+          for(const file of finalData[media.field]) {
+            if (!(file instanceof File)) {
+              files.push(file)
+            }
+          }
+          finalData[media.field] = files
+        })
+
+      formData.append('data', JSON.stringify(finalData))
+
       try {
-        const resp = await this.$axios[this.axiosMethod](this.finalRoute, this.modelObj)
+        const resp = await this.$axios[this.axiosMethod](this.finalRoute, formData)
         const join = this.redirect.includes('?') ? '&' : '?'
+        await this.filesToDelete
         if (!this.stayOnPage){
           this.$router.push(`${this.redirect}${join}message=${this.messageLabel}`)
         } else {
@@ -194,16 +249,27 @@ export default {
             type: 'is-success',
             queue: false
           })
+          if (this.fileDeleteError) {
+            this.$buefy.toast.open({
+              duration: 5000,
+              message: 'One or more files could not be deleted',
+              position: 'is-top',
+              type: 'is-danger',
+              queue: false
+            })
+            this.fileDeleteError = false
+          }
         }
       } catch (err) {
         try {
         const { data: { message, data: { errors } } } = err
-        // errrors.field lookup attributes
-        const messages = Object.keys(errors).reduce((acc, key) => {
-          const [field] = this.fields.filter(a => a.field === key)
-          const error = errors[key].map(e => e.replace(key, field.label))
-          return [...acc, ...error]
-        }, [])
+        // errors.field lookup attributes
+        const messages = Object.keys(errors)
+          .reduce((acc, key) => {
+            const [field] = this.fields.filter(a => a.field === key)
+            const error = errors[key].map(e => e.replace(key, field.label))
+            return [...acc, ...error]
+          }, [])
         const errorType = message.replace('Error', '')
         console.log('messages', messages)
         const output = messages.join(', ')

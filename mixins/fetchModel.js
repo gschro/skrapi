@@ -15,7 +15,7 @@ export default {
     populateModel(model, fields = []) {
       return fields.reduce((acc, cv) => {
         const value = model[cv.field]
-        acc[cv.field] = value && typeof value === "object" && cv.type !== 'json' ? value.id : value
+        acc[cv.field] = value && typeof value === "object" && cv.type !== 'json' && cv.type !== 'media' ? value.id : value
         return acc
       }, {
         id: model.id

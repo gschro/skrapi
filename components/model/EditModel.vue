@@ -218,41 +218,20 @@ export default {
     }
   },
   async fetch () {
-      // clean up api (attrs in object for dynamicity, preRender hook, preSubmit hook)
-      // refactor (externalize config?, maybe via plugin or nuxt or env vars)
-      // uid, add front-end preview or hide?
-      // caching of data (esp content type) via vuex
-      // add other relationship types
-      // unit tests
-
-      // post release
-      // media upload filter types
-      // add support for single types etc.
-      // fix min/max validations is-danger missing
-      // add custom validations
-      // add validations (unique? via remote?)
-      // allow configuration per field
-      // allow using slug (or other field? instead of id)
-      // add remote filtering, maybe templating for dropdown
-      // allow related fields in table/lists
-      // add counts for model entries
-      // sidebar for content types?
-      // bulk updates? select/delete from lists
-      // add tabs?
 
     const { path, params } = this.$route
-    this.path = path
     const { data } = await this.getObject('/content-manager/content-types')
     const [contentType] = data.filter(({ schema }) => schema.collectionName === params.model)
-    // this.contentType = contentType
-    this.name = contentType.label
     const { data: meta } = await this.getObject(`/content-manager/content-types/${contentType.uid}`)
     // const { data: meta } = await this.getObject(`/content-manager/content-types/application::${params.model}.${params.model}`)
+
+    this.path = path
+    this.name = contentType.label
     this.contentTypeMeta = meta
-    const { metadatas, schema: { attributes }} = meta.contentType
+    const { metadatas, schema: { attributes }} = this.contentTypeMeta.contentType
     componentMap.richtext.attrs.editor = this.editor
 
-    const combined = Object.entries(metadatas)
+    this.combined = Object.entries(metadatas)
       .map(([field, value]) => {
         const attribute = { ...value.edit, ...attributes[field] }
         const { attrs: pAttrs = {}, ...comp } = componentMap[attribute.type] || {}
@@ -266,7 +245,8 @@ export default {
             value,
             ...attrib
           }
-        }).reduce((acc, cv) => addAttribute(acc, cv), attrs)
+        })
+        .reduce((acc, cv) => addAttribute(acc, cv), attrs)
 
         const hasOptions = this.options[field] || attribute.enum
         const options = hasOptions ? { options: hasOptions } : {}
@@ -293,12 +273,8 @@ export default {
       .filter(({ visible }) => visible)
       .filter((a) => !a.private)
 
-    this.combined = combined
-
-    const dateFields = combined.filter(a => ['date','datetime','time'].includes(a.type))
-
-    console.log('combined', combined)
-    const modelsWRels = combined.filter(a => a.remote)
+    console.log('combined', this.combined)
+    const modelsWRels = this.combined.filter(a => a.remote)
     const relations = {}
     const memo = {}
 
@@ -319,37 +295,38 @@ export default {
 
     this.finalRemotes = { ...relations, ...this.remotes }
 
-    const model = await this.fetchAndPopModel(params.model, params.id, combined)
-    this.theModel = model
-
-    dateFields.forEach(a => {
-      if (this.theModel && this.theModel[a.field]){
+    this.theModel = await this.fetchAndPopModel(params.model, params.id, this.combined)
+console.log("themodel", this.theModel)
+    this.combined.filter(a => ['date','datetime','time']
+      .includes(a.type))
+      .forEach(a => {
+        if (this.theModel && this.theModel[a.field]){
+            if(a.type === 'date' || a.type === 'datetime') {
+              this.theModel[a.field] = new Date(Date.parse(this.theModel[a.field]))
+            }
+            if(a.type==='time'){
+              const dateObj = new Date();
+              const dateStr = dateObj.toISOString().split('T').shift();
+              const timeStr = this.theModel[a.field];
+              const timeAndDate = new Date(Date.parse(dateStr + ' ' + timeStr))
+              this.theModel[`${a.field}_skrapi_time`] = timeAndDate
+            }
+        }
+        if (this.model && this.model[a.field]){
           if(a.type === 'date' || a.type === 'datetime') {
-            this.theModel[a.field] = new Date(Date.parse(this.theModel[a.field]))
+            this.model[a.field] = new Date(Date.parse(this.model[a.field]))
           }
-          if(a.type==='time'){
-            const dateObj = new Date();
-            const dateStr = dateObj.toISOString().split('T').shift();
-            const timeStr = this.theModel[a.field];
-            const timeAndDate = new Date(Date.parse(dateStr + ' ' + timeStr))
-            this.theModel[`${a.field}_skrapi_time`] = timeAndDate
+          if(a.type === 'time') {
+              const dateObj = new Date();
+              const dateStr = dateObj.toISOString().split('T').shift();
+              const timeStr = this.model[a.field];
+              const timeAndDate = new Date(Date.parse(dateStr + ' ' + timeStr))
+              this.model[a.field] = timeAndDate
           }
-      }
-      if (this.model && this.model[a.field]){
-        if(a.type === 'date' || a.type === 'datetime') {
-          this.model[a.field] = new Date(Date.parse(this.model[a.field]))
         }
-        if(a.type === 'time') {
-            const dateObj = new Date();
-            const dateStr = dateObj.toISOString().split('T').shift();
-            const timeStr = this.model[a.field];
-            const timeAndDate = new Date(Date.parse(dateStr + ' ' + timeStr))
-            this.model[a.field] = timeAndDate
-        }
-      }
     })
     this.finalModel = { ...this.theModel, ...this.model }
-
+  console.log('finalModel', this.finalModel)
     this.$emit(`got:initial:model:${this.contentTypeLabel.toLowerCase()}`, this.initialModel)
     this.$emit(`got:model:${this.contentTypeLabel.toLowerCase()}`, this.populatedModel)
     this.$emit(`got:merged:model:${this.contentTypeLabel.toLowerCase()}`, this.finalModel)
