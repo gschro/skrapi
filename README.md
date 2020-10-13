@@ -1,21 +1,21 @@
 # skrapi
 
-netlify.toml, replace BASE_URL=https://ancient-thicket-40521.herokuapp.com/ with your url
+netlify.toml, replace BASE_URL=localhost:1337 with your url
 
 Some design pulled from: https://github.com/app-generator/bulmaplay
 
 # TODO
 ## alpha
 - clean up api
-- uid, add front-end preview or hide?
-- add other relationship types
 - unit tests
 
 ## roadmap
 - clean up api (attrs in object for dynamicity, preRender hook, preSubmit hook)
 - refactor (externalize config?, maybe via plugin or nuxt or env vars)
 - caching of data (esp content type) via vuex
+- add other relationship types (only one to many is supported)
 - media upload filter types
+- uid, add front-end preview or hide?
 - add support for single types etc.
 - fix min/max validations is-danger missing
 - add custom validations
