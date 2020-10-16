@@ -15,15 +15,16 @@ import EditModel from '~/components/model/EditModel'
 
 // mixins
 import editLabels from '~/mixins/editLabels'
-import fetchModel from '~/mixins/fetchModel'
 import sort from '~/mixins/sort'
+
+// other
+import { fetchModel } from '~/skrapi/fetch'
 
 export default {
   name: 'EditModelContainer',
   middleware: 'admin',
   mixins: [
     editLabels,
-    fetchModel,
     sort
   ],
   components: {
@@ -82,18 +83,20 @@ export default {
     }
   },
   async fetch () {
-    const { path, params } = this.$route
-    this.path = path
-    const { data } = await this.getObject('/content-manager/content-types')
-    const [contentType] = data.filter(({ schema }) => schema.collectionName === params.model)
-    this.contentType = contentType
-    const { data: meta } = await this.getObject(`/content-manager/content-types/${contentType.uid}`)
-    // const { data: meta } = await this.getObject(`/content-manager/content-types/application::${params.model}.${params.model}`)
-    this.contentTypeMeta = meta
-    const model = await this.fetchAndPopModel(params.model, params.id)
-    this.model = model
-    // combine responses to create "fields"
-    //  create map of field types to buefy fields (add missing from other packages or create)
+    // const test = await fetchModel(this.$route)
+    // console.log('test', test)
+    // const {
+    //   path,
+    //   contentType,
+    //   initialModel,
+    //   meta,
+    //   model
+    // } = test
+    // this.path = path
+    // this.contentType = contentType
+    // this.contentTypeMeta = meta
+    // this.model = model
+    // this.initialModel = initialModel
   },
   fetchOnServer: false,
 }

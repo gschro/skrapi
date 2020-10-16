@@ -47,8 +47,11 @@ import ClassicEditor from '@ckeditor/ckeditor5-build-classic'
 
 // mixins
 import pluralName from '~/mixins/pluralName'
-import fetchModel from '~/mixins/fetchModel'
+// import fetchModel from '~/mixins/fetchModel'
 import editLabels from '~/mixins/editLabels'
+
+// other
+import { fetchSchema, fetchModel, getFieldRelations, mapFields } from '~/skrapi/fetch'
 
 const toBool = a => !!a
 const condition = toBool
@@ -113,21 +116,11 @@ const conditionalAttrs = [
   }
 ]
 
-const addAttribute = (obj, { add, field, value, postTransform = a => a }) => {
-  if (add) {
-    return {
-      ...obj,
-      [field]: postTransform(value)
-    }
-  }
-  return obj
-}
-
 export default {
   name: 'EditModel',
   mixins: [
     editLabels,
-    fetchModel,
+    // fetchModel,
     pluralName,
   ],
   components: {
@@ -218,85 +211,24 @@ export default {
     }
   },
   async fetch () {
-
     const { path, params } = this.$route
-    const { data } = await this.getObject('/content-manager/content-types')
-    const [contentType] = data.filter(({ schema }) => schema.collectionName === params.model)
-    const { data: meta } = await this.getObject(`/content-manager/content-types/${contentType.uid}`)
-    // const { data: meta } = await this.getObject(`/content-manager/content-types/application::${params.model}.${params.model}`)
+    const { contentType, meta } = await fetchSchema(params)
 
     this.path = path
     this.name = contentType.label
     this.contentTypeMeta = meta
-    const { metadatas, schema: { attributes }} = this.contentTypeMeta.contentType
+
     componentMap.richtext.attrs.editor = this.editor
 
-    this.combined = Object.entries(metadatas)
-      .map(([field, value]) => {
-        const attribute = { ...value.edit, ...attributes[field] }
-        const { attrs: pAttrs = {}, ...comp } = componentMap[attribute.type] || {}
-        const attrs = Object.assign({}, pAttrs)
-
-        const finalAttrs = conditionalAttrs.map(({ valueKey, condition = toBool, ...attrib }) => {
-          const value = attribute[valueKey]
-          const add = condition(value, attribute)
-          return {
-            add,
-            value,
-            ...attrib
-          }
-        })
-        .reduce((acc, cv) => addAttribute(acc, cv), attrs)
-
-        const hasOptions = this.options[field] || attribute.enum
-        const options = hasOptions ? { options: hasOptions } : {}
-        const remote = attribute.via ? { remote: attribute.model } : {}
-        const { default: defaultValue, description, editable, label, required, type, unique, visible } = attribute
-        const commonAttrs = {
-          default: defaultValue, description, editable, label, required, type, unique, visible
-        }
-
-        return {
-          field,
-          ...commonAttrs,
-          component: {
-            is: comp.component,
-            attrs: finalAttrs,
-            class: comp.class,
-            message: '',
-            componentState: '',
-            ...options,
-            ...remote
-          }
-        }
-      })
-      .filter(({ visible }) => visible)
-      .filter((a) => !a.private)
-
+    this.combined = mapFields(meta.data.contentType, { componentMap, conditionalAttrs, options: this.options })
     console.log('combined', this.combined)
-    const modelsWRels = this.combined.filter(a => a.remote)
-    const relations = {}
-    const memo = {}
-
-    for(const model of modelsWRels){
-      const relModel = this.makePlural(model.model)
-      if (this.remotes[relModel]){
-        continue
-      }
-      if(memo[relModel]){
-        relations[model.field] = memo[relModel]
-      }
-      else {
-        const resp = await this.getModel(relModel, null, true)
-        relations[model.field] = resp
-        memo[relModel] = resp
-      }
-    }
+    const relations = await getFieldRelations(this.combined, this.remotes)
 
     this.finalRemotes = { ...relations, ...this.remotes }
 
-    this.theModel = await this.fetchAndPopModel(params.model, params.id, this.combined)
-console.log("themodel", this.theModel)
+    const { response, model } = await fetchModel(params.model, params.id, this.combined)
+
+    this.theModel = model
     this.combined.filter(a => ['date','datetime','time']
       .includes(a.type))
       .forEach(a => {

@@ -42,7 +42,8 @@ export default {
   plugins: [
     '@/plugins/axios.js',
     '@/plugins/ckeditor.js',
-    '@/plugins/vjsoneditor.js'
+    '@/plugins/vjsoneditor.js',
+    '@/plugins/skrapi.js'
   ],
   auth: {
     redirect: {

@@ -145,12 +145,9 @@ export default {
       switch(field.type) {
         case 'time':
           return `${field.field}_skrapi_time`
-        // case 'media':
-        //   return `files.${field.field}`
         default:
           return field.field
       }
-      // return field.type === 'time' ? `${field.field}_skrapi_time` : field.field
     },
     nullField(field) {
       this.filesToDelete.push(this.modelObj[field])
@@ -160,8 +157,6 @@ export default {
     deleteDropFile(field, index) {
       this.filesToDelete.push(this.modelObj[field][index])
       this.modelObj[field].splice(index, 1)
-      // nullField(field.field)
-      //stage file for delete
     },
     requiredField: (required) => {
       return required ? 'required' : ''

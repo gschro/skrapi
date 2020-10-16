@@ -11,6 +11,7 @@ Some design pulled from: https://github.com/app-generator/bulmaplay
 
 ## roadmap
 - clean up api (attrs in object for dynamicity, preRender hook, preSubmit hook)
+- add publishing support
 - refactor (externalize config?, maybe via plugin or nuxt or env vars)
 - caching of data (esp content type) via vuex
 - add other relationship types (only one to many is supported)
