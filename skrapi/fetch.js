@@ -1,50 +1,22 @@
 import { apiClient } from './apiClient'
 import pluralize from 'pluralize'
+import { componentMap, conditionalAttrs } from './component'
+import { addAttribute, toBool, contentTypeFilter, valueKey } from './utils'
+import { mapDateFields, mapFields, populateModel } from './dataUtils'
 
 const getObject = async (path, params) => apiClient.get(path, { params })
+
 const getModelById = async (model, id) => apiClient.get(`/${model}/${id}`)
+
 const getModel = async (model, params, all = false) => {
   const values = await apiClient.$get(`/${model}`, { params })
   const [value] = values
   return all ? values : value
 }
 
-const contentTypeFilter = (model) => ({ schema }) => schema.collectionName === model
-
-const valueKey = (field) => {
-  switch(field.type) {
-    case 'time':
-      return `${field.field}_skrapi_time`
-    default:
-      return field.field
-  }
-}
-
-const populateModel = (model, fields = []) => {
-  console.log('fields1', fields)
-  console.log('model1', model)
-  const data = fields.reduce((acc, cv) => {
-    const value = model[cv.field]
-    acc[cv.field] = value
-      && typeof value === "object"
-      && cv.type !== 'json'
-      && cv.type !== 'media'
-      ? value.id
-      : value
-    // add extra key for special types (time etc.)
-    acc[valueKey(cv)] = acc[cv.field]
-    return acc
-  }, {
-    id: model.id
-  })
-  console.log('DATA!!!', data)
-  return data
-}
-
 const fetchModel = async (model, id, fields) => {
   const response = await getModelById(model, id)
   const populatedModel = populateModel(response.data, fields)
-  console.log('popped model', populatedModel)
   return {
     response,
     model: populatedModel
@@ -62,60 +34,6 @@ const fetchSchema = async (params) => {
     meta
   }
 }
-
-const addAttribute = (obj, { add, field, value, postTransform = a => a }) => {
-  if (add) {
-    return {
-      ...obj,
-      [field]: postTransform(value)
-    }
-  }
-  return obj
-}
-const toBool = a => !!a
-const mapFields = ({ metadatas, schema: { attributes }}, { componentMap, conditionalAttrs, options }) => Object.entries(metadatas)
-  .map(([field, value]) => {
-
-    const attribute = { ...value.edit, ...attributes[field] }
-
-    const { attrs: pAttrs = {}, ...comp } = componentMap[attribute.type] || {}
-    const attrs = Object.assign({}, pAttrs)
-
-    const finalAttrs = conditionalAttrs.map(({ valueKey, condition = toBool, ...attrib }) => {
-      const value = attribute[valueKey]
-      const add = condition(value, attribute)
-      return {
-        add,
-        value,
-        ...attrib
-      }
-    })
-    .reduce((acc, cv) => addAttribute(acc, cv), attrs)
-
-    const hasOptions = (options && options[field]) || attribute.enum
-    const options = hasOptions ? { options: hasOptions } : {}
-    const remote = attribute.via ? { remote: attribute.model } : {}
-    const { default: defaultValue, description, editable, label, required, type, unique, visible } = attribute
-    const commonAttrs = {
-      default: defaultValue, description, editable, label, required, type, unique, visible
-    }
-
-    return {
-      field,
-      ...commonAttrs,
-      component: {
-        is: comp.component,
-        attrs: finalAttrs,
-        class: comp.class,
-        message: '',
-        componentState: '',
-        ...options,
-        ...remote
-      }
-    }
-  })
-  .filter(({ visible }) => visible)
-  .filter((a) => !a.private)
 
 const getFieldRelations = async (fields, remotes) => {
   const modelsWRels = fields.filter(a => a.remote)
@@ -139,10 +57,42 @@ const getFieldRelations = async (fields, remotes) => {
   return relations
 }
 
+const editModel = async ({ params, model, options, componentMapOverrides, conditionalAttrsOverrides, remotes }) => {
+  // get content type metadata
+  const { contentType, meta } = await fetchSchema(params)
+  const name = contentType.label
+
+  const finalComponentMap = { ...componentMap, ...componentMapOverrides }
+
+  // combine field metadata, component map, conditonal attributes, and options
+  const combined = mapFields(meta.data.contentType, { componentMap: finalComponentMap, conditionalAttrs, options })
+
+  // get remotes from field relationships
+  const relations = await getFieldRelations(combined, remotes)
+  const finalRemotes = { ...relations, ...remotes }
+
+  // get model data
+  const { model: fetchMod } = await fetchModel(params.model, params.id, combined)
+
+  // parse / convert date/time fields for components
+  const fetchedModel = mapDateFields(combined, fetchMod)
+  const modelParam = mapDateFields(combined, model)
+
+  // combine retrieved model with model paramter overrides
+  const finalModel = { ...fetchedModel, ...modelParam }
+  return {
+    combined,     // fields
+    finalModel,   // model values
+    finalRemotes, // drop down values
+    name,         // model display name
+  }
+}
+
 export {
+  editModel,
   fetchSchema,
   fetchModel,
-  getFieldRelations,
-  mapFields,
-  valueKey
+  getObject,
+  getModelById,
+  getModel,
 }

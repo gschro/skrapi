@@ -1,4 +1,5 @@
 <template>
+<div class="container">
   <section class="section">
     <fetch-pending :pending="$fetchState.pending">
       <template v-slot:pending>
@@ -15,6 +16,7 @@
       </div>
 
       <form-fields
+        class="box"
         :name="contentTypeLabel"
         :plural="plural"
         :method="method"
@@ -28,6 +30,7 @@
       </form-fields>
     </fetch-pending>
   </section>
+</div>
 </template>
 
 <style>
@@ -47,80 +50,16 @@ import ClassicEditor from '@ckeditor/ckeditor5-build-classic'
 
 // mixins
 import pluralName from '~/mixins/pluralName'
-// import fetchModel from '~/mixins/fetchModel'
 import editLabels from '~/mixins/editLabels'
 
 // other
-import { fetchSchema, fetchModel, getFieldRelations, mapFields } from '~/skrapi/fetch'
-
-const toBool = a => !!a
-const condition = toBool
-
-const componentMap = {
-  relation: { component: 'b-select' },
-  string: { component: 'b-input' },
-  text: { component: 'b-input', attrs: { type: 'textarea' } },
-  richtext: { component: 'ckeditor', attrs: {} },
-  email: { component: 'b-input', attrs: { type: 'email' } },
-  password: { component: 'b-input', attrs: { type: 'password' } },
-  integer: { component: 'b-numberinput', attrs: { step: 1 }},
-  biginteger: { component: 'b-input', attrs: { step: 1 }},
-  float: { component: 'b-numberinput' },
-  decimal: { component: 'b-numberinput' },
-  date: { component: 'b-datepicker' },
-  time: { component: 'b-clockpicker' },
-  datetime: { component: 'b-datetimepicker' },
-  boolean: { component: 'b-switch' },
-  enumeration: { component: 'b-select' },
-  json: { component: 'v-jsoneditor', attrs: { options: { mode: 'text' } } },
-  uid: { component: 'b-input' },
-  media: { component: 'b-upload', attrs: {} }
-}
-
-Object.keys(componentMap).forEach(key => {
-  componentMap[key].class = 'is-one-third-widescreen is-12-mobile column mb-3 small-gap no-marginb'
-})
-
-const conditionalAttrs = [
-  {
-    field: 'disabled',
-    valueKey: 'configurable',
-    preTransform: toBool
-  },
-  {
-    field: 'required',
-    valueKey: 'required'
-  },
-  {
-    field: 'aria-required',
-    valueKey: 'required'
-  },
-  {
-    field: 'min',
-    valueKey: 'min',
-    postTransform: a => String(a)
-  },
-  {
-    field: 'max',
-    valueKey: 'max',
-    postTransform: a => String(a)
-  },
-  {
-    field: 'multiple',
-    valueKey: 'multiple',
-    condition: (value, field) => field.type === 'media' && field.multiple
-  },
-  {
-    field: 'placeholder',
-    valueKey: 'placeholder'
-  }
-]
+import { editModel, fetchSchema, fetchModel, getFieldRelations, mapFields, mapDateFields } from '~/skrapi/fetch'
+import { componentMap, conditionalAttrs } from '~/skrapi/component'
 
 export default {
   name: 'EditModel',
   mixins: [
     editLabels,
-    // fetchModel,
     pluralName,
   ],
   components: {
@@ -131,10 +70,6 @@ export default {
     SubLink,
   },
   props: {
-    // name: {
-    //   type: String,
-    //   required: true,
-    // },
     method: {
       type: String,
       required: true,
@@ -143,10 +78,6 @@ export default {
       type: Object,
       default: {}
     },
-    // fields: {
-    //   type: Array,
-    //   required: true,
-    // },
     pathPrefix: {
       type: String,
       default: '',
@@ -212,56 +143,17 @@ export default {
   },
   async fetch () {
     const { path, params } = this.$route
-    const { contentType, meta } = await fetchSchema(params)
-
     this.path = path
-    this.name = contentType.label
-    this.contentTypeMeta = meta
 
-    componentMap.richtext.attrs.editor = this.editor
+    // set richtext editor
+    const componentMapOverrides = {} // { richtext: { attrs: { editor: this.editor } } }
 
-    this.combined = mapFields(meta.data.contentType, { componentMap, conditionalAttrs, options: this.options })
-    console.log('combined', this.combined)
-    const relations = await getFieldRelations(this.combined, this.remotes)
-
-    this.finalRemotes = { ...relations, ...this.remotes }
-
-    const { response, model } = await fetchModel(params.model, params.id, this.combined)
-
-    this.theModel = model
-    this.combined.filter(a => ['date','datetime','time']
-      .includes(a.type))
-      .forEach(a => {
-        if (this.theModel && this.theModel[a.field]){
-            if(a.type === 'date' || a.type === 'datetime') {
-              this.theModel[a.field] = new Date(Date.parse(this.theModel[a.field]))
-            }
-            if(a.type==='time'){
-              const dateObj = new Date();
-              const dateStr = dateObj.toISOString().split('T').shift();
-              const timeStr = this.theModel[a.field];
-              const timeAndDate = new Date(Date.parse(dateStr + ' ' + timeStr))
-              this.theModel[`${a.field}_skrapi_time`] = timeAndDate
-            }
-        }
-        if (this.model && this.model[a.field]){
-          if(a.type === 'date' || a.type === 'datetime') {
-            this.model[a.field] = new Date(Date.parse(this.model[a.field]))
-          }
-          if(a.type === 'time') {
-              const dateObj = new Date();
-              const dateStr = dateObj.toISOString().split('T').shift();
-              const timeStr = this.model[a.field];
-              const timeAndDate = new Date(Date.parse(dateStr + ' ' + timeStr))
-              this.model[a.field] = timeAndDate
-          }
-        }
-    })
-    this.finalModel = { ...this.theModel, ...this.model }
-  console.log('finalModel', this.finalModel)
-    this.$emit(`got:initial:model:${this.contentTypeLabel.toLowerCase()}`, this.initialModel)
-    this.$emit(`got:model:${this.contentTypeLabel.toLowerCase()}`, this.populatedModel)
-    this.$emit(`got:merged:model:${this.contentTypeLabel.toLowerCase()}`, this.finalModel)
+    // get content type metadata
+    const { combined, contentType, finalModel, finalRemotes, name } = await editModel({ params, model: this.model, componentMapOverrides, options: this.options, remotes: this.remotes })
+    this.name = name
+    this.combined = combined
+    this.finalRemotes = finalRemotes
+    this.finalModel = finalModel
   },
   fetchOnServer: false,
 }

@@ -1,1 +1,5 @@
-export default () => console.log('here!!!')
+import fetch from './fetch'
+
+export default {
+  fetch
+}

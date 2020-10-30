@@ -28,11 +28,6 @@ export default {
           title: 'Inspire',
           icon: 'lightbulb',
           to: { name: 'inspire' }
-        },
-        {
-          title: 'Parks',
-          icon: 'lightbulb',
-          to: { name: 'parks' }
         }
       ]
     }
